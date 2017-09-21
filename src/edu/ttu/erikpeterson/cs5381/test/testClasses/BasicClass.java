@@ -1,4 +1,4 @@
-package edu.ttu.erikpeterson.cs5381.test.cases.basicFile;
+package edu.ttu.erikpeterson.cs5381.test.testClasses;
 
 public class BasicClass {
     public static void main(String[] args)
