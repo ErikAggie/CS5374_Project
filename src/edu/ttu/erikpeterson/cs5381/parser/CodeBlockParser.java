@@ -43,14 +43,18 @@ public class CodeBlockParser {
 
         // Grab the info for this block (the stuff just before the '}' and after the previous ';' or '}'
         String blockInfo;
-        int previousSemicolonPosition = contents.lastIndexOf(';', startPosition - 1);
-        int previousOpenParenPosition = contents.lastIndexOf('{', startPosition - 1);
+        int previousSemicolonPosition = contents.lastIndexOf(';', firstOpenParen-1);
+        int previousOpenParenPosition = contents.lastIndexOf('{', firstOpenParen-1);
         int mostRecentPosition = Math.max(previousSemicolonPosition, previousOpenParenPosition);
         if (mostRecentPosition < 0) {
             blockInfo = contents.substring(0, startPosition);
+        } else if ( firstOpenParen == mostRecentPosition)
+        {
+            blockInfo = "";
         } else {
-            blockInfo = contents.substring(Math.max(previousOpenParenPosition, previousSemicolonPosition), startPosition-1);
+            blockInfo = contents.substring(mostRecentPosition+1, firstOpenParen);
         }
+        blockInfo = blockInfo.trim();
 
         int newStartPosition = firstOpenParen + 1;
 
