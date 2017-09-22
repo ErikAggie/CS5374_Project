@@ -36,16 +36,18 @@ public class CodeBlockParser {
     private static int findBlock(String contents, LinkedList<CodeBlock> codeBlocks, int startPosition) {
         int numBlocksToStart = codeBlocks.size();
         int firstOpenParen = contents.indexOf('{', startPosition);
-        if (firstOpenParen < 0) {
+        int firstCloseParen = contents.indexOf('}', startPosition);
+        if (firstOpenParen < 0 || firstCloseParen < firstOpenParen) {
             // No more blocks
             return -1;
         }
 
         // Grab the info for this block (the stuff just before the '}' and after the previous ';' or '}'
         String blockInfo;
+        // Note that for loops (which include ';'s will be truncated here, but we don't need to identify them... :)
         int previousSemicolonPosition = contents.lastIndexOf(';', firstOpenParen-1);
         int previousOpenParenPosition = contents.lastIndexOf('{', firstOpenParen-1);
-        int mostRecentPosition = Math.max(previousSemicolonPosition, previousOpenParenPosition);
+        int mostRecentPosition = Math.max(previousSemicolonPosition, previousOpenParenPosition)+1;
         if (mostRecentPosition < 0) {
             blockInfo = contents.substring(0, startPosition);
         } else if ( firstOpenParen == mostRecentPosition)
@@ -57,6 +59,18 @@ public class CodeBlockParser {
         blockInfo = blockInfo.trim();
 
         int newStartPosition = firstOpenParen + 1;
+
+        // See if there are blocks internal to us
+        int nextOpenParen = contents.indexOf('{', newStartPosition);
+        int nextCloseParen = contents.indexOf('}', newStartPosition);
+
+        if ( nextOpenParen > nextCloseParen)
+        {
+            // We are a self-contained block
+            String blockContents = contents.substring(firstOpenParen + 1, nextCloseParen);
+            codeBlocks.add(numBlocksToStart, new CodeBlock(blockInfo, blockContents));
+            return firstCloseParen + 1;
+        }
 
         // Now recursively look for internal code blocks
         while (true) {
@@ -79,47 +93,5 @@ public class CodeBlockParser {
         codeBlocks.add(numBlocksToStart, new CodeBlock(blockInfo, blockContents));
         return closeOfOurBlock + 1;
     }
-/*
-
-            int semicolonPosition = contents.indexOf(';', startPosition);
-            semicolonPosition = (semicolonPosition >= 0) ? semicolonPosition : Integer.MAX_VALUE;
-            int closeParenPosition = contents.indexOf('}', startPosition);
-
-            String blockInfo = null;
-            String blockContents = null;
-
-            if ( semicolonPosition > contents.length() &&
-                 firsopenParenPosition > contents.length()) {
-                // Reached the end of the file without finding anything
-            }
-            else if ( closeParenPosition < openParenPosition)
-            {
-                // Our block is closing, so we're done
-                // Add us to the spot we originally started with
-                if ( blockInfo != null)
-                {
-                    String blockContents =
-                    codeBlocks.add(numBlocksToStart, new CodeBlock(blockInfo)
-                }
-                return closeParenPosition;
-            }
-
-            else if ( semicolonPosition < openParenPosition )
-            {
-                startPosition = semicolonPosition + 1;
-            }
-            else
-            {
-                // Found a '{'!
-                // Grab stuff between the '{' and the preceding '}' and ';'
-
-                int lastInternalPosition = findBlock(contents, codeBlocks, startPosition + 1);
-
-                int closeParenPosition
-            }
-        }
-        return
-
-    }*/
 
 }

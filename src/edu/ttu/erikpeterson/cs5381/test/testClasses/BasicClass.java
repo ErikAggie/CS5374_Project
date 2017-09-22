@@ -1,25 +1,15 @@
 package edu.ttu.erikpeterson.cs5381.test.testClasses;
 
 public class BasicClass {
-    public static void main(String[] args)
+    public BasicClass() {}
+
+    public void method1() {}
+
+    public void method2()
     {
-        // Do stuff
-    }
-
-    public BasicClass()
-    {
-        // Do stuff
-    }
-
-    public void method1()
-    {
-
-    }
-
-    public void method2() {}
-
-    public String method3(String arg)
-    {
-        return arg;
+        for ( int i=0; i<10; i++)
+        {
+            System.out.println("This is " + i);
+        }
     }
 }
