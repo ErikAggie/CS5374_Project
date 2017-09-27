@@ -18,7 +18,12 @@ public class CodeBlockParser {
 
         int position = 0;
         while (position < contents.length()) {
-            position = findBlock(contents, codeBlocks, position);
+            CodeBlock codeBlock = findBlock(contents, codeBlocks, position);
+            if ( codeBlock == null)
+            {
+                return codeBlocks;
+            }
+            position = codeBlock.getEndPosition() + 1;
         }
 
         return codeBlocks;
@@ -31,15 +36,15 @@ public class CodeBlockParser {
      * @param contents contents of the Java file
      * @param codeBlocks List of code blocks--expect stuff to be added to it!
      * @param startPosition Where to start looking in the file
-     * @return Position after the code block, or Integer.MAX_VALUE if none found
+     * @return The CodeBlock (if any) found
      */
-    private static int findBlock(String contents, LinkedList<CodeBlock> codeBlocks, int startPosition) {
+    private static CodeBlock findBlock(String contents, LinkedList<CodeBlock> codeBlocks, int startPosition) {
         int numBlocksToStart = codeBlocks.size();
         int firstOpenParen = contents.indexOf('{', startPosition);
         int firstCloseParen = contents.indexOf('}', startPosition);
         if (firstOpenParen < 0 || firstCloseParen < firstOpenParen) {
             // No more blocks
-            return -1;
+            return null;
         }
 
         // Grab the info for this block (the stuff just before the '}' and after the previous ';' or '}'
@@ -56,6 +61,7 @@ public class CodeBlockParser {
         } else {
             blockInfo = contents.substring(mostRecentPosition+1, firstOpenParen);
         }
+        int blockInfoStart = startPosition-blockInfo.length();
         blockInfo = blockInfo.trim();
 
         int newStartPosition = firstOpenParen + 1;
@@ -68,19 +74,20 @@ public class CodeBlockParser {
         {
             // We are a self-contained block
             String blockContents = contents.substring(firstOpenParen + 1, nextCloseParen);
-            codeBlocks.add(numBlocksToStart, new CodeBlock(blockInfo, blockContents));
-            return firstCloseParen + 1;
+            CodeBlock codeBlock = new CodeBlock(blockInfo, blockContents, blockInfoStart, nextCloseParen);
+            codeBlocks.add(numBlocksToStart, codeBlock);
+            return codeBlock;
         }
 
         // Now recursively look for internal code blocks
         while (true) {
-            int endOfBlock = findBlock(contents, codeBlocks, newStartPosition);
-            if (endOfBlock < 0) {
+            CodeBlock internalCodeBlock = findBlock(contents, codeBlocks, newStartPosition);
+            if (internalCodeBlock == null) {
                 // No more internal blocks
                 break;
             } else {
                 // Need to look for more internal blocks
-                newStartPosition = endOfBlock + 1;
+                newStartPosition = internalCodeBlock.getEndPosition() + 1;
             }
         }
 
@@ -90,8 +97,9 @@ public class CodeBlockParser {
         String blockContents = contents.substring(firstOpenParen + 1, closeOfOurBlock);
 
         // Add our code block so that it's before the sub-blocks (aka after everything that came before us)
-        codeBlocks.add(numBlocksToStart, new CodeBlock(blockInfo, blockContents));
-        return closeOfOurBlock + 1;
+        CodeBlock ourCodeBlock = new CodeBlock(blockInfo, blockContents, blockInfoStart, closeOfOurBlock);
+        codeBlocks.add(numBlocksToStart, ourCodeBlock);
+        return ourCodeBlock;
     }
 
 }
