@@ -11,7 +11,7 @@ public class CodeBlockParser {
      * @param file File to parse
      * @return The blocks in this file
      */
-    public static LinkedList<CodeBlock> parse(File file) throws FileNotFoundException {
+    public static LinkedList<CodeBlock> parse(File file) throws FileNotFoundException, BlockParsingException {
         LinkedList<CodeBlock> codeBlocks = new LinkedList<>();
 
         String contents = new Scanner(file).useDelimiter("\\Z").next();
@@ -38,7 +38,7 @@ public class CodeBlockParser {
      * @param startPosition Where to start looking in the file
      * @return The CodeBlock (if any) found
      */
-    private static CodeBlock findBlock(String contents, LinkedList<CodeBlock> codeBlocks, int startPosition) {
+    private static CodeBlock findBlock(String contents, LinkedList<CodeBlock> codeBlocks, int startPosition) throws BlockParsingException {
         int numBlocksToStart = codeBlocks.size();
         int firstOpenParen = contents.indexOf('{', startPosition);
         int firstCloseParen = contents.indexOf('}', startPosition);
@@ -74,7 +74,11 @@ public class CodeBlockParser {
         {
             // We are a self-contained block
             String blockContents = contents.substring(firstOpenParen + 1, nextCloseParen);
-            CodeBlock codeBlock = new CodeBlock(blockInfo, blockContents, blockInfoStart, nextCloseParen);
+            CodeBlock codeBlock = new CodeBlock(blockInfo,
+                                                getBlockType(contents, blockInfo, blockInfoStart),
+                                                blockContents,
+                                                blockInfoStart,
+                                                nextCloseParen);
             codeBlocks.add(numBlocksToStart, codeBlock);
             return codeBlock;
         }
@@ -97,9 +101,26 @@ public class CodeBlockParser {
         String blockContents = contents.substring(firstOpenParen + 1, closeOfOurBlock);
 
         // Add our code block so that it's before the sub-blocks (aka after everything that came before us)
-        CodeBlock ourCodeBlock = new CodeBlock(blockInfo, blockContents, blockInfoStart, closeOfOurBlock);
+        CodeBlock ourCodeBlock = new CodeBlock(blockInfo,
+                                               getBlockType(contents, blockInfo, blockInfoStart),
+                                               blockContents,
+                                               blockInfoStart,
+                                               closeOfOurBlock);
         codeBlocks.add(numBlocksToStart, ourCodeBlock);
         return ourCodeBlock;
+    }
+
+    private static CodeBlockType getBlockType(String fullText, String blockInfo, int blockInfoPosition) throws BlockParsingException
+    {
+        if ( blockInfo.startsWith("class ") || blockInfo.contains(" class "))
+        {
+            // It's a class!
+            return CodeBlockType.CLASS;
+        }
+
+        return CodeBlockType.METHOD;
+
+        //throw new BlockParsingException("Unknown block type: " + blockInfo);
     }
 
 }

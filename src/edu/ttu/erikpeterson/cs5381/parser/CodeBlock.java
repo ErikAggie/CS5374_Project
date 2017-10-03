@@ -8,6 +8,8 @@ public class CodeBlock {
 
     private final String blockInfo;
 
+    private final CodeBlockType blockType;
+
     /**
      * Everything between '{' and '}'
      */
@@ -23,9 +25,10 @@ public class CodeBlock {
      */
     private final int endPosition;
 
-    CodeBlock(String blockInfo, String contents, int startPosition, int endPosition)
+    CodeBlock(String blockInfo, CodeBlockType blockType, String contents, int startPosition, int endPosition)
     {
         this.blockInfo = blockInfo;
+        this.blockType = blockType;
         this.contents = contents;
         this.startPosition = startPosition;
         this.endPosition = endPosition;
