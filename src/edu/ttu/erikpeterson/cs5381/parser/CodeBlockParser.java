@@ -2,7 +2,9 @@ package edu.ttu.erikpeterson.cs5381.parser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
 public class CodeBlockParser {
@@ -36,7 +38,7 @@ public class CodeBlockParser {
      * @param contents contents of the Java file
      * @param codeBlocks List of code blocks--expect stuff to be added to it!
      * @param startPosition Where to start looking in the file
-     * @return The CodeBlock (if any) found
+     * @return All class code blocks (methods and whatnot are held internally)
      */
     private static CodeBlock findBlock(String contents, LinkedList<CodeBlock> codeBlocks, int startPosition) throws BlockParsingException {
         int numBlocksToStart = codeBlocks.size();
@@ -74,15 +76,20 @@ public class CodeBlockParser {
         {
             // We are a self-contained block
             String blockContents = contents.substring(firstOpenParen + 1, nextCloseParen);
+            CodeBlockType blockType = getBlockType(contents, blockInfo, blockInfoStart);
             CodeBlock codeBlock = new CodeBlock(blockInfo,
-                                                getBlockType(contents, blockInfo, blockInfoStart),
+                                                blockType,
                                                 blockContents,
                                                 blockInfoStart,
                                                 nextCloseParen);
-            codeBlocks.add(numBlocksToStart, codeBlock);
+            if ( blockType == CodeBlockType.CLASS)
+            {
+                codeBlocks.add(numBlocksToStart, codeBlock);
+            }
             return codeBlock;
         }
 
+        List<CodeBlock> subCodeBlocks = new ArrayList<>();
         // Now recursively look for internal code blocks
         while (true) {
             CodeBlock internalCodeBlock = findBlock(contents, codeBlocks, newStartPosition);
@@ -90,6 +97,7 @@ public class CodeBlockParser {
                 // No more internal blocks
                 break;
             } else {
+                subCodeBlocks.add(internalCodeBlock);
                 // Need to look for more internal blocks
                 newStartPosition = internalCodeBlock.getEndPosition() + 1;
             }
@@ -101,12 +109,17 @@ public class CodeBlockParser {
         String blockContents = contents.substring(firstOpenParen + 1, closeOfOurBlock);
 
         // Add our code block so that it's before the sub-blocks (aka after everything that came before us)
+        CodeBlockType blockType = getBlockType(contents, blockInfo, blockInfoStart);
         CodeBlock ourCodeBlock = new CodeBlock(blockInfo,
-                                               getBlockType(contents, blockInfo, blockInfoStart),
+                                               blockType,
                                                blockContents,
                                                blockInfoStart,
                                                closeOfOurBlock);
-        codeBlocks.add(numBlocksToStart, ourCodeBlock);
+        ourCodeBlock.addCodeBlocks(subCodeBlocks);
+        if ( blockType == CodeBlockType.CLASS)
+        {
+            codeBlocks.add(numBlocksToStart, ourCodeBlock);
+        }
         return ourCodeBlock;
     }
 
@@ -118,6 +131,7 @@ public class CodeBlockParser {
             return CodeBlockType.CLASS;
         }
 
+        // TODO: flesh out...
         return CodeBlockType.METHOD;
 
         //throw new BlockParsingException("Unknown block type: " + blockInfo);
