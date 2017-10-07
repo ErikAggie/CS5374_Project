@@ -22,7 +22,7 @@ public enum CodeBlockType {
      */
     SYNCHRONIZED,
     /**
-     * A loop (for loop, while loop, etc.)
+     * Something that's just code (i.e. we can scan it without calling it out separately
      */
-    LOOP
+    CODE_BLOCK
 }
