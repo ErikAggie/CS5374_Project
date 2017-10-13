@@ -13,6 +13,8 @@ public class CodeBlock {
 
     private final CodeBlockType blockType;
 
+    //TODO: add name to classes and methods...
+
     /**
      * Everything between '{' and '}'
      */
@@ -55,11 +57,13 @@ public class CodeBlock {
         return blockType;
     }
 
-    public void addCodeBlocks(List<CodeBlock> subCodeBlocks) {
-        for ( CodeBlock subCodeBlock : subCodeBlocks)
-        {
-            this.subCodeBlocks.add(subCodeBlock);
-        }
+    /**
+     * Add code blocks to our list of sub-blocks
+     *
+     * @param subCodeBlocks Blocks to add
+     */
+    void addCodeBlocks(List<CodeBlock> subCodeBlocks) {
+        this.subCodeBlocks.addAll(subCodeBlocks);
     }
 
     /**

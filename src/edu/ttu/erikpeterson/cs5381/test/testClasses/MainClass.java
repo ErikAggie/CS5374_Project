@@ -17,13 +17,18 @@ public class MainClass {
         for (int i=0; i<NUM_THREADS; i++) {
             final Future<Integer> integerFuture = threadPool.submit(() -> new Random().nextInt(10));
             awaitedValues.add(integerFuture);
+
+            final Future<Integer> methodFuture = threadPool.submit(() ->
+            {
+                return new Random().nextInt(10);
+            });
+            awaitedValues.add(methodFuture);
         }
 
         int total = 0;
-        for ( int i=0; i<NUM_THREADS; i++)
-        {
+        for (Future<Integer> awaitedValue : awaitedValues) {
             try {
-                total += awaitedValues.get(i).get();
+                total += awaitedValue.get();
             } catch (InterruptedException | ExecutionException e) {
                 e.printStackTrace();
                 System.exit(-1);

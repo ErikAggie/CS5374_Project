@@ -13,8 +13,12 @@ public class CodeBlockParser {
     private static final Pattern CLASS_PATTERN = Pattern.compile("\\sclass\\s");
     private static final Pattern SYNCHRONIZED_PATTERN = Pattern.compile("\\s*(synchronized)\\s*\\(");
 
+    // Pattern for creating and submitting a future
+    private static final Pattern FUTURE_SUBMISSION = Pattern.compile("Future\\s*<.*>.*submit\\s*\\(");
+
     // Because the method pattern might match loops (for, while, etc.) we need to dispose of them first
     // Note that a for loop is handled in code because our parsing doesn't capture all of it (just the increment part after the last ';')
+    private static final Pattern FOR_EACH_PATTERN = Pattern.compile("for\\s\\(.*:.*\\)");
     private static final Pattern WHILE_PATTERN = Pattern.compile("(while)\\s*\\(");
     private static final Pattern DO_PATTERN = Pattern.compile("^do$");
 
@@ -159,9 +163,15 @@ public class CodeBlockParser {
             return CodeBlockType.CODE_BLOCK;
         }
 
+        if ( FUTURE_SUBMISSION.matcher(blockInfo).find())
+        {
+            return CodeBlockType.THREAD_ENTRY;
+        }
+
         // TODO: May want to split out try/catch/finally at some point
         // (e.g. to check if locks done in a try are undone in a finally)
-        if ( WHILE_PATTERN.matcher(blockInfo).find() ||
+        if ( FOR_EACH_PATTERN.matcher(blockInfo).find() ||
+             WHILE_PATTERN.matcher(blockInfo).find() ||
              DO_PATTERN.matcher(blockInfo).find() ||
              TRY_PATTERN.matcher(blockInfo).find() ||
              CATCH_PATTERN.matcher(blockInfo).find() ||
