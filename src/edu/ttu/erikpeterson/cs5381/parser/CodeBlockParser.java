@@ -16,6 +16,9 @@ public class CodeBlockParser {
     // Pattern for creating and submitting a future
     private static final Pattern FUTURE_SUBMISSION = Pattern.compile("Future\\s*<.*>.*submit\\s*\\(");
 
+    // Main method pattern (with allowable whitespace between words)
+    private static final Pattern MAIN_METHOD = Pattern.compile("public\\s+static\\s+void\\s+main\\s*\\(\\s*String\\s*\\[\\s*\\].+\\)");
+
     // Because the method pattern might match loops (for, while, etc.) we need to dispose of them first
     // Note that a for loop is handled in code because our parsing doesn't capture all of it (just the increment part after the last ';')
     private static final Pattern FOR_EACH_PATTERN = Pattern.compile("for\\s\\(.*:.*\\)");
@@ -78,8 +81,7 @@ public class CodeBlockParser {
         int mostRecentPosition = Math.max(Math.max(previousSemicolonPosition, previousOpenBracePosition), previousCloseBracePosition)+1;
         if (mostRecentPosition < 0) {
             blockInfo = contents.substring(0, startPosition);
-        } else if ( firstOpenBrace == mostRecentPosition)
-        {
+        } else if ( firstOpenBrace == mostRecentPosition) {
             blockInfo = "";
         } else {
             blockInfo = contents.substring(mostRecentPosition+1, firstOpenBrace);
@@ -164,6 +166,11 @@ public class CodeBlockParser {
         }
 
         if ( FUTURE_SUBMISSION.matcher(blockInfo).find())
+        {
+            return CodeBlockType.THREAD_ENTRY;
+        }
+
+        if ( MAIN_METHOD.matcher(blockInfo).find())
         {
             return CodeBlockType.THREAD_ENTRY;
         }
