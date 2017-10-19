@@ -11,9 +11,31 @@ public class CodeWalker {
     {
         this.codeBlockList = codeBlockList;
         for ( CodeBlock codeBlock : codeBlockList) {
-            if ( codeBlock.getBlockType() == CodeBlockType.THREAD_ENTRY)
+            addThreadEntryBlocks(codeBlock);
+        }
+    }
+
+    public List<CodeBlock> getThreadStarts()
+    {
+        return threadStarts;
+    }
+
+    /**
+     * Recursive check for thread start blocks
+     *
+     * @param codeBlock Block to scan
+     */
+    private void addThreadEntryBlocks(CodeBlock codeBlock)
+    {
+        if ( codeBlock.getBlockType() == CodeBlockType.THREAD_ENTRY)
+        {
+            threadStarts.add(codeBlock);
+        }
+        if ( codeBlock.hasSubBlocks())
+        {
+            for ( CodeBlock subCodeBlock : codeBlock.getSubCodeBlocks())
             {
-                threadStarts.add(codeBlock);
+                addThreadEntryBlocks(subCodeBlock);
             }
         }
     }

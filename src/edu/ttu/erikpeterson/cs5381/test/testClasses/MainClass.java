@@ -15,12 +15,19 @@ public class MainClass {
 
         ArrayList<Future<Integer>> awaitedValues = new ArrayList<>();
         for (int i=0; i<NUM_THREADS; i++) {
-            final Future<Integer> integerFuture = threadPool.submit(() -> new Random().nextInt(10));
+            // Normally this would wouldn't be spelled out with {...}, but the parser
+            // can't catch those as futures
+            final Future<Integer> integerFuture = threadPool.submit(() ->
+            {
+                return new Random().nextInt(100);
+            });
             awaitedValues.add(integerFuture);
 
             final Future<Integer> methodFuture = threadPool.submit(() ->
             {
-                return new Random().nextInt(10);
+                int randomValue = new Random().nextInt(10);
+                randomValue *= 10;
+                return randomValue;
             });
             awaitedValues.add(methodFuture);
         }

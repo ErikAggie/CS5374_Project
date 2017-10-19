@@ -165,6 +165,8 @@ public class CodeBlockParser {
             return CodeBlockType.CODE_BLOCK;
         }
 
+        // KNOWN LIMITATION: This won't catch futures that are submitted without a {} (one line Futures)
+        // e.g. final Future<Integer> integerFuture = threadPool.submit(() -> new Random().nextInt(10));
         if ( FUTURE_SUBMISSION.matcher(blockInfo).find())
         {
             return CodeBlockType.THREAD_ENTRY;

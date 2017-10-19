@@ -66,6 +66,11 @@ public class CodeBlock {
         this.subCodeBlocks.addAll(subCodeBlocks);
     }
 
+    public boolean hasSubBlocks()
+    {
+        return !subCodeBlocks.isEmpty();
+    }
+
     /**
      * Finds a method with the given name
      *
@@ -85,6 +90,11 @@ public class CodeBlock {
         }
 
         return null;
+    }
+
+    public List<CodeBlock> getSubCodeBlocks()
+    {
+        return subCodeBlocks;
     }
 
     public CodeBlock getSubCodeBlock(int index)
