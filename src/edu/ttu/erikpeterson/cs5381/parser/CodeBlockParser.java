@@ -6,11 +6,12 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CodeBlockParser {
 
-    private static final Pattern CLASS_PATTERN = Pattern.compile("\\sclass\\s");
+    private static final Pattern CLASS_PATTERN = Pattern.compile("\\sclass\\s+(\\w+)");
     private static final Pattern SYNCHRONIZED_PATTERN = Pattern.compile("\\s*(synchronized)\\s*\\(");
 
     // Pattern for creating and submitting a future
@@ -30,7 +31,8 @@ public class CodeBlockParser {
     private static final Pattern FINALLY_PATTERN = Pattern.compile("^finally$");
 
     // Attempts to match a method. Because this could well match while and synchronized blocks, it needs to happen last
-    private static final Pattern METHOD_PATTERN = Pattern.compile("(public|private|protected)?\\s*(static)?[\\w\\s]*([\\w\\[\\]<>\\s,]*)");
+    private static final Pattern METHOD_PATTERN = Pattern.compile("(public|private|protected)?\\s*(static)?\\s*\\w*\\s+(\\w+)\\s*\\([\\w\\[\\]<>\\s,]*\\)");
+    //private static final Pattern METHOD_PATTERN = Pattern.compile("(public|private|protected)?\\s*(static)?[\\w\\s]*(\\w*)([\\w\\[\\]<>\\s,]*)");
 
     /**
      * @param file File to parse
@@ -105,6 +107,7 @@ public class CodeBlockParser {
                                                 blockContents,
                                                 blockInfoStart,
                                                 nextCloseParen);
+            addNameIfNeeded(codeBlock);
             if ( blockType == CodeBlockType.CLASS)
             {
                 codeBlocks.add(numBlocksToStart, codeBlock);
@@ -138,12 +141,36 @@ public class CodeBlockParser {
                                                blockContents,
                                                blockInfoStart,
                                                closeOfOurBlock);
+        addNameIfNeeded(ourCodeBlock);
         ourCodeBlock.addCodeBlocks(subCodeBlocks);
         if ( blockType == CodeBlockType.CLASS)
         {
             codeBlocks.add(numBlocksToStart, ourCodeBlock);
         }
         return ourCodeBlock;
+    }
+
+    private static void addNameIfNeeded(CodeBlock codeBlock)
+    {
+        CodeBlockType blockType = codeBlock.getBlockType();
+        if ( blockType == CodeBlockType.CLASS)
+        {
+            // Grab the class name
+            Matcher classMatcher = CLASS_PATTERN.matcher(codeBlock.getBlockInfo());
+            if ( classMatcher.find())
+            {
+                codeBlock.setName(classMatcher.group(1));
+            }
+        }
+        else if ( blockType == CodeBlockType.METHOD)
+        {
+            // Grab the method name
+            Matcher methodMatcher = METHOD_PATTERN.matcher(codeBlock.getBlockInfo());
+            if ( methodMatcher.find())
+            {
+                codeBlock.setName(methodMatcher.group(3));
+            }
+        }
     }
 
     private static CodeBlockType getBlockType(String fullText, String blockInfo, int blockInfoPosition) throws BlockParsingException

@@ -15,7 +15,7 @@ public class MainClass {
 
         ArrayList<Future<Integer>> awaitedValues = new ArrayList<>();
         for (int i=0; i<NUM_THREADS; i++) {
-            // Normally this would wouldn't be spelled out with {...}, but the parser
+            // Normally this would wouldn't be spelled out with curly braces, but the parser
             // can't catch those as futures
             final Future<Integer> integerFuture = threadPool.submit(() ->
             {

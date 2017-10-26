@@ -8,12 +8,11 @@ public class CodeBlock {
     /**
      * The information right before this block
      */
-
     private final String blockInfo;
 
     private final CodeBlockType blockType;
 
-    //TODO: add name to classes and methods...
+    private String name;
 
     /**
      * Everything between '{' and '}'
@@ -40,6 +39,10 @@ public class CodeBlock {
         this.startPosition = startPosition;
         this.endPosition = endPosition;
     }
+
+    void setName(String name) { this.name = name; }
+
+    public String getName() { return name; }
 
     public String getBlockInfo() {
         return blockInfo;

@@ -21,6 +21,27 @@ public class CodeWalker {
     }
 
     /**
+     * Walk through all the identified threads
+     */
+    public void walkAllThreadStarts()
+    {
+        for ( CodeBlock threadStart : threadStarts)
+        {
+            walkThread(threadStart);
+        }
+    }
+
+    /**
+     * Walk thorugh a specific thread
+     * @param thread The code block to walk
+     */
+    public void walkThread(CodeBlock thread)
+    {
+
+    }
+
+
+    /**
      * Recursive check for thread start blocks
      *
      * @param codeBlock Block to scan
