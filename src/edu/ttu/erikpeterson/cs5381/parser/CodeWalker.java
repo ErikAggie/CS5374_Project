@@ -1,7 +1,6 @@
 package edu.ttu.erikpeterson.cs5381.parser;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class CodeWalker {
     private final List<CodeBlock> codeBlockList;
@@ -37,9 +36,8 @@ public class CodeWalker {
      */
     public void walkThread(CodeBlock thread)
     {
-
+        // TODO: Fill in!
     }
-
 
     /**
      * Recursive check for thread start blocks
