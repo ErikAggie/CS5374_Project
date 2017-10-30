@@ -10,6 +10,11 @@ public class MainClass {
 
     private static final int NUM_THREADS = 5;
 
+    /**
+     * Main method :)
+     *
+     * @param args
+     */
     public static void main(String[] args) {
         ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
 

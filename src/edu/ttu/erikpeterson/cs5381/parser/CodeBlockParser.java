@@ -42,6 +42,7 @@ public class CodeBlockParser {
         LinkedList<CodeBlock> codeBlocks = new LinkedList<>();
 
         String contents = new Scanner(file).useDelimiter("\\Z").next();
+        contents = removeAllComments(contents);
 
         int position = 0;
         while (position < contents.length()) {
@@ -54,6 +55,17 @@ public class CodeBlockParser {
         }
 
         return codeBlocks;
+    }
+
+    private static String removeAllComments(String contents)
+    {
+        // Remove all /*...*/, even if there are newlines in the middle
+        contents = contents.replaceAll("\\/\\*[\\W\\w]*\\*\\/", "");
+
+        // Remove all //....
+        contents = contents.replaceAll("\\/\\/.*\\n", "");
+
+        return contents;
     }
 
 
