@@ -34,12 +34,35 @@ public class CodeBlockParser {
     private static final Pattern METHOD_PATTERN = Pattern.compile("(public|private|protected)?\\s*(static)?\\s*\\w*\\s+(\\w+)\\s*\\([\\w\\[\\]<>\\s,]*\\)");
     //private static final Pattern METHOD_PATTERN = Pattern.compile("(public|private|protected)?\\s*(static)?[\\w\\s]*(\\w*)([\\w\\[\\]<>\\s,]*)");
 
+    public static List<CodeBlock> parsePath(File directory) throws  FileNotFoundException, BlockParsingException {
+
+        if ( !directory.exists())
+        {
+            throw new FileNotFoundException("Directory " + directory.getAbsolutePath() + " can't be found!");
+        }
+
+        if ( !directory.isDirectory())
+        {
+            return parse(directory);
+        }
+
+        List<CodeBlock> codeBlocks = new LinkedList<>();
+
+        for ( File fileOrDirectory : directory.listFiles())
+        {
+            // If this is a file, the above if check will handle it
+            codeBlocks.addAll(parsePath(fileOrDirectory));
+        }
+
+        return codeBlocks;
+    }
+
     /**
      * @param file File to parse
      * @return The blocks in this file
      */
-    public static LinkedList<CodeBlock> parse(File file) throws FileNotFoundException, BlockParsingException {
-        LinkedList<CodeBlock> codeBlocks = new LinkedList<>();
+    public static List<CodeBlock> parse(File file) throws FileNotFoundException, BlockParsingException {
+        List<CodeBlock> codeBlocks = new LinkedList<>();
 
         String contents = new Scanner(file).useDelimiter("\\Z").next();
         contents = removeAllComments(contents);
@@ -77,7 +100,7 @@ public class CodeBlockParser {
      * @param startPosition Where to start looking in the file
      * @return All class code blocks (methods and whatnot are held internally)
      */
-    private static CodeBlock findBlock(String contents, LinkedList<CodeBlock> codeBlocks, int startPosition) throws BlockParsingException {
+    private static CodeBlock findBlock(String contents, List<CodeBlock> codeBlocks, int startPosition) throws BlockParsingException {
         int numBlocksToStart = codeBlocks.size();
         int firstOpenBrace = contents.indexOf('{', startPosition);
         int firstCloseBrace = contents.indexOf('}', startPosition);

@@ -6,7 +6,7 @@ import edu.ttu.erikpeterson.cs5381.parser.CodeWalker;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.LinkedList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -17,7 +17,7 @@ public class CodeWalkerTest {
     void walkBasicClass()
     {
         File basicClass = new File(Util.TEST_CLASS_PATH + "/BasicClass.java");
-        LinkedList<CodeBlock> codeBlocks = null;
+        List<CodeBlock> codeBlocks = null;
         try
         {
             codeBlocks = CodeBlockParser.parse(basicClass);
@@ -35,7 +35,7 @@ public class CodeWalkerTest {
     void walkMainClass()
     {
         File mainClass = new File(Util.TEST_CLASS_PATH + "/MainClass.java");
-        LinkedList<CodeBlock> codeBlocks = null;
+        List<CodeBlock> codeBlocks = null;
         try
         {
             codeBlocks = CodeBlockParser.parse(mainClass);
