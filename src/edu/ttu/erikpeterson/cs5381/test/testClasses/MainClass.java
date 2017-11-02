@@ -13,14 +13,14 @@ public class MainClass {
     /**
      * Main method :)
      *
-     * @param args
+     * @param args Unused
      */
     public static void main(String[] args) {
         ExecutorService threadPool = Executors.newFixedThreadPool(NUM_THREADS);
 
         ArrayList<Future<Integer>> awaitedValues = new ArrayList<>();
         for (int i=0; i<NUM_THREADS; i++) {
-            // Normally this would wouldn't be spelled out with curly braces, but the parser
+            // Normally this wouldn't be spelled out with curly braces, but the parser
             // can't catch those as futures
             final Future<Integer> integerFuture = threadPool.submit(() ->
             {

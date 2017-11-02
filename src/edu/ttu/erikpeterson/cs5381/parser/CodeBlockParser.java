@@ -48,7 +48,14 @@ public class CodeBlockParser {
 
         List<CodeBlock> codeBlocks = new LinkedList<>();
 
-        for ( File fileOrDirectory : directory.listFiles())
+        File[] fileListing = directory.listFiles();
+
+        if ( fileListing == null)
+        {
+            // Nothing here
+            return codeBlocks;
+        }
+        for ( File fileOrDirectory : fileListing)
         {
             // If this is a file, the above if check will handle it
             codeBlocks.addAll(parsePath(fileOrDirectory));
@@ -86,7 +93,10 @@ public class CodeBlockParser {
         contents = contents.replaceAll("\\/\\*[\\W\\w]*\\*\\/", "");
 
         // Remove all //....
-        contents = contents.replaceAll("\\/\\/.*\\n", "");
+        contents = contents.replaceAll("\\/\\/.*\\r\\n", "");
+
+        // Remove all string literals
+        contents = contents.replaceAll("\\\".*\\\"", "");
 
         return contents;
     }
