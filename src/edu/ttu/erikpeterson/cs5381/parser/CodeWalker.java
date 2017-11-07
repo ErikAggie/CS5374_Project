@@ -46,6 +46,7 @@ public class CodeWalker {
      */
     private void addThreadEntryBlocks(CodeBlock codeBlock)
     {
+        // TODO: Not sure if it's better done here or elsewhere, but need to catch new Thread()...run(){} blocks
         if ( codeBlock.getBlockType() == CodeBlockType.THREAD_ENTRY)
         {
             threadStarts.add(codeBlock);
