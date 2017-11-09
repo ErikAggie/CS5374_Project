@@ -1,5 +1,9 @@
 package edu.ttu.erikpeterson.cs5381.parser;
 
+import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlock;
+import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlockFactory;
+import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlockType;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
@@ -111,15 +115,15 @@ public class CodeBlockParser {
     /**
      * Recursively find code blocks
      *
-     * @param contents contents of the Java file
+     * @param fileContents Contents of the Java file
      * @param codeBlocks List of code blocks--expect stuff to be added to it!
      * @param startPosition Where to start looking in the file
      * @return All class code blocks (methods and whatnot are held internally)
      */
-    private static CodeBlock findBlock(String contents, List<CodeBlock> codeBlocks, int startPosition) throws BlockParsingException {
+    private static CodeBlock findBlock(String fileContents, List<CodeBlock> codeBlocks, int startPosition) throws BlockParsingException {
         int numBlocksToStart = codeBlocks.size();
-        int firstOpenBrace = contents.indexOf('{', startPosition);
-        int firstCloseBrace = contents.indexOf('}', startPosition);
+        int firstOpenBrace = fileContents.indexOf('{', startPosition);
+        int firstCloseBrace = fileContents.indexOf('}', startPosition);
         if (firstOpenBrace < 0 || firstCloseBrace < firstOpenBrace) {
             // No more blocks
             return null;
@@ -128,38 +132,38 @@ public class CodeBlockParser {
         // Grab the info for this block (the stuff just before the '}' and after the previous ';' or '}'
         String blockInfo;
         // Note that for loops (which include ';'s will be truncated here, but we don't need to identify them... :)
-        int previousSemicolonPosition = contents.lastIndexOf(';', firstOpenBrace-1);
-        int previousOpenBracePosition = contents.lastIndexOf('{', firstOpenBrace-1);
-        int previousCloseBracePosition = contents.lastIndexOf('}', firstOpenBrace-1);
+        int previousSemicolonPosition = fileContents.lastIndexOf(';', firstOpenBrace-1);
+        int previousOpenBracePosition = fileContents.lastIndexOf('{', firstOpenBrace-1);
+        int previousCloseBracePosition = fileContents.lastIndexOf('}', firstOpenBrace-1);
         int mostRecentPosition = Math.max(Math.max(previousSemicolonPosition, previousOpenBracePosition), previousCloseBracePosition)+1;
         int blockInfoStart = 0;
         if (mostRecentPosition < 0) {
-            blockInfo = contents.substring(0, startPosition);
+            blockInfo = fileContents.substring(0, startPosition);
         } else if ( firstOpenBrace == mostRecentPosition) {
             blockInfo = "";
             blockInfoStart = mostRecentPosition;
         } else {
-            blockInfo = contents.substring(mostRecentPosition+1, firstOpenBrace);
+            blockInfo = fileContents.substring(mostRecentPosition+1, firstOpenBrace);
             blockInfoStart = mostRecentPosition+1;
         }
-        blockInfo = blockInfo.trim();
 
         int newStartPosition = firstOpenBrace + 1;
 
         // See if there are blocks internal to us
-        int nextOpenParen = contents.indexOf('{', newStartPosition);
-        int nextCloseParen = contents.indexOf('}', newStartPosition);
+        int nextOpenParen = fileContents.indexOf('{', newStartPosition);
+        int nextCloseParen = fileContents.indexOf('}', newStartPosition);
 
         if ( nextOpenParen > nextCloseParen)
         {
             // We are a self-contained block
-            String blockContents = contents.substring(firstOpenBrace + 1, nextCloseParen);
-            CodeBlockType blockType = getBlockType(contents, blockInfo, blockInfoStart);
-            CodeBlock codeBlock = new CodeBlock(blockInfo,
-                                                blockType,
-                                                blockContents,
-                                                blockInfoStart,
-                                                nextCloseParen);
+            String blockContents = fileContents.substring(firstOpenBrace + 1, nextCloseParen);
+            CodeBlockType blockType = getBlockType(fileContents, blockInfo, blockInfoStart);
+            CodeBlock codeBlock = CodeBlockFactory.BuildBlock(blockInfo,
+                                                              blockType,
+                                                              blockContents,
+                                                              fileContents,
+                                                              blockInfoStart,
+                                                              nextCloseParen);
             addNameIfNeeded(codeBlock);
             if ( blockType == CodeBlockType.CLASS)
             {
@@ -171,7 +175,7 @@ public class CodeBlockParser {
         List<CodeBlock> subCodeBlocks = new ArrayList<>();
         // Now recursively look for internal code blocks
         while (true) {
-            CodeBlock internalCodeBlock = findBlock(contents, codeBlocks, newStartPosition);
+            CodeBlock internalCodeBlock = findBlock(fileContents, codeBlocks, newStartPosition);
             if (internalCodeBlock == null) {
                 // No more internal blocks
                 break;
@@ -184,18 +188,25 @@ public class CodeBlockParser {
 
         // Now that we've found all the internal code blocks, the next '}' is the end of our block
         // Assuming well-formed code, and no '{' or '}' in comments....
-        int closeOfOurBlock = contents.indexOf('}', newStartPosition);
-        String blockContents = contents.substring(firstOpenBrace + 1, closeOfOurBlock);
+        int closeOfOurBlock = fileContents.indexOf('}', newStartPosition);
+        String blockContents = fileContents.substring(firstOpenBrace + 1, closeOfOurBlock);
 
         // Add our code block so that it's before the sub-blocks (aka after everything that came before us)
-        CodeBlockType blockType = getBlockType(contents, blockInfo, blockInfoStart);
-        CodeBlock ourCodeBlock = new CodeBlock(blockInfo,
-                                               blockType,
-                                               blockContents,
-                                               blockInfoStart,
-                                               closeOfOurBlock);
+        CodeBlockType blockType = getBlockType(fileContents, blockInfo, blockInfoStart);
+        CodeBlock ourCodeBlock = CodeBlockFactory.BuildBlock(blockInfo,
+                                                             blockType,
+                                                             blockContents,
+                                                             fileContents,
+                                                             blockInfoStart,
+                                                             closeOfOurBlock);
         addNameIfNeeded(ourCodeBlock);
         ourCodeBlock.addCodeBlocks(subCodeBlocks);
+
+        for ( CodeBlock subBlock : subCodeBlocks)
+        {
+            subBlock.setParent(ourCodeBlock);
+        }
+
         if ( blockType == CodeBlockType.CLASS)
         {
             codeBlocks.add(numBlocksToStart, ourCodeBlock);
@@ -228,6 +239,7 @@ public class CodeBlockParser {
 
     private static CodeBlockType getBlockType(String fullText, String blockInfo, int blockInfoPosition) throws BlockParsingException
     {
+        blockInfo = blockInfo.trim();
         // Check for class " ... class ... "
         if ( CLASS_PATTERN.matcher(blockInfo).find())
         {

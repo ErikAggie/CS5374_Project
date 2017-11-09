@@ -1,7 +1,8 @@
 package edu.ttu.erikpeterson.cs5381.test;
 
 import edu.ttu.erikpeterson.cs5381.parser.BlockParsingException;
-import edu.ttu.erikpeterson.cs5381.parser.CodeBlock;
+import edu.ttu.erikpeterson.cs5381.parser.block.ClassBlock;
+import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlock;
 import edu.ttu.erikpeterson.cs5381.parser.CodeBlockParser;
 import edu.ttu.erikpeterson.cs5381.parser.CodeWalker;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -56,6 +58,10 @@ public class CodeWalkerTest {
     @Test
     void parseSynchronizedDeadlock() throws FileNotFoundException, BlockParsingException {
         List<CodeBlock> codeBlocks = CodeBlockParser.parse(new File(Util.TEST_CLASS_PATH + "/SynchronizedDeadlock.java"));
+        ClassBlock classBlock = (ClassBlock) codeBlocks.get(0);
+        Map<String, String> variables = classBlock.getClassVariables();
+        assertEquals(variables.get("string1"), "String");
+        assertEquals(variables.get("string2"), "String");
 
         CodeWalker walker = new CodeWalker(codeBlocks);
         assertEquals(walker.getThreadStarts().size(), 2);
