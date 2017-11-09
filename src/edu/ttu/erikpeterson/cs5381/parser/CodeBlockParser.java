@@ -16,6 +16,12 @@ public class CodeBlockParser {
 
     // Pattern for creating and submitting a future
     private static final Pattern FUTURE_SUBMISSION = Pattern.compile("Future\\s*<.*>.*submit\\s*\\(");
+    // New thread created inline e.g. new Thread(() -> {...})
+    private static final Pattern NEW_THREAD_INLINE_PATTERN = Pattern.compile("=\\s+new\\s+Thread\\s*\\(\\s*\\(\\s*\\)\\s+->");
+    // Thread's run() declaration e.g. new Thread() { public void run() {...} };
+    private static final Pattern THREAD_RUN_METHOD_PATTERN = Pattern.compile("public\\s+void\\s+run\\s*\\(\\s*\\)");
+    // Thread creation that finishes at the end of a substring (used to verify that a run() method is for a Thread declaration)
+    private static final Pattern THREAD_CREATION_JUST_FINISHED_PATTERN = Pattern.compile("new\\s+Thread\\s*\\(\\s*\\)\\s*$");
 
     // Main method pattern (with allowable whitespace between words)
     private static final Pattern MAIN_METHOD = Pattern.compile("public\\s+static\\s+void\\s+main\\s*\\(\\s*String\\s*\\[\\s*\\].+\\)");
@@ -126,14 +132,16 @@ public class CodeBlockParser {
         int previousOpenBracePosition = contents.lastIndexOf('{', firstOpenBrace-1);
         int previousCloseBracePosition = contents.lastIndexOf('}', firstOpenBrace-1);
         int mostRecentPosition = Math.max(Math.max(previousSemicolonPosition, previousOpenBracePosition), previousCloseBracePosition)+1;
+        int blockInfoStart = 0;
         if (mostRecentPosition < 0) {
             blockInfo = contents.substring(0, startPosition);
         } else if ( firstOpenBrace == mostRecentPosition) {
             blockInfo = "";
+            blockInfoStart = mostRecentPosition;
         } else {
             blockInfo = contents.substring(mostRecentPosition+1, firstOpenBrace);
+            blockInfoStart = mostRecentPosition+1;
         }
-        int blockInfoStart = startPosition-blockInfo.length();
         blockInfo = blockInfo.trim();
 
         int newStartPosition = firstOpenBrace + 1;
@@ -239,7 +247,18 @@ public class CodeBlockParser {
 
         // KNOWN LIMITATION: This won't catch futures that are submitted without a {} (one line Futures)
         // e.g. final Future<Integer> integerFuture = threadPool.submit(() -> new Random().nextInt(10));
-        if ( FUTURE_SUBMISSION.matcher(blockInfo).find())
+        if ( FUTURE_SUBMISSION.matcher(blockInfo).find() ||
+             NEW_THREAD_INLINE_PATTERN.matcher(blockInfo).find())
+        {
+            return CodeBlockType.THREAD_ENTRY;
+        }
+
+        // See if this is a new Thread with an overridden run method
+        // e.g. new Thread() { public void run() {...} }
+        // This requires looking just before the current method
+        if ( THREAD_RUN_METHOD_PATTERN.matcher(blockInfo).find() &&
+             blockInfoPosition > 1 &&
+             THREAD_CREATION_JUST_FINISHED_PATTERN.matcher(fullText.substring(0, blockInfoPosition - 2)).find())
         {
             return CodeBlockType.THREAD_ENTRY;
         }
