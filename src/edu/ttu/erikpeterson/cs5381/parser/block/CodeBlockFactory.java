@@ -27,6 +27,9 @@ public class CodeBlockFactory {
         {
             case CLASS:
                 return new ClassBlock(blockInfo, contents, fileContents, startPosition, endPosition);
+            case METHOD:
+            case THREAD_ENTRY:
+                return new MethodBlock(blockInfo, blockType, contents, fileContents, startPosition, endPosition);
             default:
                 return new CodeBlock(blockInfo, blockType, contents, fileContents, startPosition, endPosition);
         }

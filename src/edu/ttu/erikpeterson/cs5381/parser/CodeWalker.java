@@ -1,8 +1,10 @@
 package edu.ttu.erikpeterson.cs5381.parser;
 
+import edu.ttu.erikpeterson.cs5381.parser.block.ClassBlock;
 import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlock;
 import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlockType;
 
+import java.text.ParseException;
 import java.util.*;
 
 public class CodeWalker {
@@ -27,12 +29,6 @@ public class CodeWalker {
      */
     public void walkAllThreadStarts()
     {
-        // Find all class variables for use later
-        for ( CodeBlock classBlock : codeBlockList)
-        {
-            findClassVariables(classBlock);
-        }
-
         for ( CodeBlock threadStart : threadStarts)
         {
             walkThread(threadStart);
@@ -66,10 +62,5 @@ public class CodeWalker {
                 addThreadEntryBlocks(subCodeBlock);
             }
         }
-    }
-
-    private void findClassVariables(CodeBlock classBlock)
-    {
-
     }
 }
