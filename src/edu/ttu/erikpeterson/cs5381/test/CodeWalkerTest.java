@@ -5,6 +5,7 @@ import edu.ttu.erikpeterson.cs5381.parser.block.ClassBlock;
 import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlock;
 import edu.ttu.erikpeterson.cs5381.parser.CodeBlockParser;
 import edu.ttu.erikpeterson.cs5381.parser.CodeWalker;
+import edu.ttu.erikpeterson.cs5381.parser.block.MethodBlock;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -12,8 +13,7 @@ import java.io.FileNotFoundException;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class CodeWalkerTest {
 
@@ -38,16 +38,24 @@ public class CodeWalkerTest {
     @Test
     void walkMainClass()
     {
-        File mainClass = new File(Util.TEST_CLASS_PATH + "/MainClass.java");
+        File mainClassFile = new File(Util.TEST_CLASS_PATH + "/MainClass.java");
         List<CodeBlock> codeBlocks = null;
         try
         {
-            codeBlocks = CodeBlockParser.parse(mainClass);
+            codeBlocks = CodeBlockParser.parse(mainClassFile);
         }
         catch ( Exception e)
         {
-            fail("Unable to parse file " + mainClass.getAbsolutePath() + ": " + e.getMessage());
+            fail("Unable to parse file " + mainClassFile.getAbsolutePath() + ": " + e.getMessage());
         }
+
+        assertEquals(1, codeBlocks.size());
+        assertTrue(codeBlocks.get(0) instanceof ClassBlock);
+        ClassBlock mainClass = ((ClassBlock)codeBlocks.get(0));
+        MethodBlock mainMethod = mainClass.getMethodBlock("main");
+        assertNotNull(mainMethod);
+
+        Map<String, String> mainVariables = mainMethod.getVariables();
 
         CodeWalker walker = new CodeWalker(codeBlocks);
         assertEquals(walker.getThreadStarts().size(), 3);

@@ -33,15 +33,15 @@ public class ClassBlock extends CodeBlock {
      * @param methodName Method name to find
      * @return Method code block with that name, or null otherwise
      */
-    public CodeBlock getMethodBlock(String methodName)
+    public MethodBlock getMethodBlock(String methodName)
     {
         for ( CodeBlock subCodeBlock : subCodeBlocks)
         {
             // TODO: Assuming no space between the method name and open parentheses
-            if ( subCodeBlock.blockType == CodeBlockType.METHOD &&
-                    subCodeBlock.getBlockInfo().contains(" " + methodName + "("))
+            if ( subCodeBlock instanceof MethodBlock &&
+                 subCodeBlock.getBlockInfo().contains(" " + methodName + "("))
             {
-                return subCodeBlock;
+                return (MethodBlock) subCodeBlock;
             }
         }
 
