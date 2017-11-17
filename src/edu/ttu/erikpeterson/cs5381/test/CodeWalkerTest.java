@@ -55,7 +55,12 @@ public class CodeWalkerTest {
         MethodBlock mainMethod = mainClass.getMethodBlock("main");
         assertNotNull(mainMethod);
 
+        // main() has some interior methods (the thread start blocks), so make sure they're getting cut out
+        assertNotEquals(mainMethod.getThisMethodsCode().length(), mainMethod.getContents().length());
+
         Map<String, String> mainVariables = mainMethod.getVariables();
+        // This contains the "randomValue" from one of the Futures, but that doesn't cause a problem elsewhere
+        assertEquals(6, mainVariables.keySet().size());
 
         CodeWalker walker = new CodeWalker(codeBlocks);
         assertEquals(walker.getThreadStarts().size(), 3);
