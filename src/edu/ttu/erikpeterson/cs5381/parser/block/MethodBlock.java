@@ -1,5 +1,6 @@
 package edu.ttu.erikpeterson.cs5381.parser.block;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -11,10 +12,14 @@ public class MethodBlock extends CodeBlock {
     private static final Pattern VARIABLE_DECLARE_ASSIGN = Pattern.compile("^(final\\s+)?([\\w\\<\\>]+)\\s+(\\w+) =");
     private static final Pattern VARIABLE_DECLARE = Pattern.compile("^(final\\s+)?([\\w\\<\\>]+)\\s+(\\w+)$");
 
+    // Pattern for synchronized blocks
+    private static final Pattern SYNCHRONIZED_PATTERN = Pattern.compile("\\s*synchronized\\s*\\(\\s*(\\w+)\\s*\\)");
+
     final Map<String, String> variables = new HashMap<>();
+    private boolean foundVariables = false;
+
     private String thisMethodsCode = "";
 
-    private boolean foundVariables = false;
 
     /**
      * Constructor
@@ -63,38 +68,62 @@ public class MethodBlock extends CodeBlock {
     }
 
     /**
+     * Walk through this method, looking for
+     * @return
+     */
+    public void walkThread(List<CodeBlock> allCodeBlocks, List<LockInfo> lockInfo)
+    {
+        // Get ready
+        if ( !foundVariables)
+        {
+            findVariables();
+        }
+        findThisMethodsCode();
+
+        String[] statements = thisMethodsCode.split("[{;}]");
+        for ( String statement : statements)
+        {
+            Matcher synchronizedMatcher = SYNCHRONIZED_PATTERN.matcher(statement);
+            if ( synchronizedMatcher.find())
+            {
+                // Found a synchronized block. See if we can find the variable's type
+                String variable = synchronizedMatcher.group(1);
+                String classOfVariable = variables.get(variable);
+                if ( variable.isEmpty())
+                {
+                    // Try the
+                }
+            }
+        }
+    }
+
+    /**
      * Remove all the interior method blocks so we have exactly what this method will execute.
      * Delayed construction to allow subblocks to be added
      */
     private void findThisMethodsCode()
     {
+        if ( !thisMethodsCode.isEmpty())
+        {
+            // Already done
+            return;
+        }
+
         if ( subCodeBlocks.isEmpty())
         {
             thisMethodsCode = contents;
+            return;
         }
 
         StringBuilder builder = new StringBuilder();
         findCodeInBlock(this, builder);
-        /*int startLoc = fileContents.indexOf("{", startPosition) + 1;
-        int endLoc = startPosition + contents.length() - 1;
-        for ( CodeBlock block : subCodeBlocks)
-        {
-            builder.append(fileContents.substring(startLoc, block.startPosition));
-            findCodeInBlock(block, builder);
-            startLoc = block.endPosition - this.startPosition + 1;
-        }
-
-        // Now add whatever's left
-        builder.append(fileContents.substring(startLoc, endPosition));*/
 
         thisMethodsCode = builder.toString();
-
-        System.out.println("Executable code: " + thisMethodsCode);
     }
 
     /**
-     * Find code thie method executes in a particular block.
-     * Recurses as it finds subblocks
+     * Find code this method executes in a particular block.
+     * Recurses as it finds subblocks (for loops, etc.)
      *
      * @param block
      * @param builder
@@ -109,6 +138,8 @@ public class MethodBlock extends CodeBlock {
         }
 
         int startLoc = fileContents.indexOf("{", block.startPosition) + 1;
+        builder.append(fileContents.substring(block.startPosition, startLoc));
+
         for ( CodeBlock subBlock : block.subCodeBlocks)
         {
             builder.append(fileContents.substring(startLoc, subBlock.startPosition));

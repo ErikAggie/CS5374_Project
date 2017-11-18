@@ -1,15 +1,15 @@
 package edu.ttu.erikpeterson.cs5381.parser;
 
-import edu.ttu.erikpeterson.cs5381.parser.block.ClassBlock;
 import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlock;
 import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlockType;
+import edu.ttu.erikpeterson.cs5381.parser.block.LockInfo;
+import edu.ttu.erikpeterson.cs5381.parser.block.MethodBlock;
 
-import java.text.ParseException;
 import java.util.*;
 
 public class CodeWalker {
     private final List<CodeBlock> codeBlockList;
-    private final List<CodeBlock> threadStarts = new ArrayList<>();
+    private final List<MethodBlock> threadStarts = new ArrayList<>();
 
     public CodeWalker(List<CodeBlock> codeBlockList)
     {
@@ -19,7 +19,7 @@ public class CodeWalker {
         }
     }
 
-    public List<CodeBlock> getThreadStarts()
+    public List<MethodBlock> getThreadStarts()
     {
         return threadStarts;
     }
@@ -29,7 +29,8 @@ public class CodeWalker {
      */
     public void walkAllThreadStarts()
     {
-        for ( CodeBlock threadStart : threadStarts)
+        List<List<LockInfo>> allLockInfo = new ArrayList<>();
+        for ( MethodBlock threadStart : threadStarts)
         {
             walkThread(threadStart);
         }
@@ -39,9 +40,12 @@ public class CodeWalker {
      * Walk thorugh a specific thread
      * @param thread The code block to walk
      */
-    public void walkThread(CodeBlock thread)
+    public List<LockInfo> walkThread(MethodBlock thread)
     {
-        // TODO: Fill in!
+        List<LockInfo> lockInfo = new ArrayList<>();
+        thread.walkThread(codeBlockList, lockInfo);
+
+        return lockInfo;
     }
 
     /**
@@ -53,7 +57,7 @@ public class CodeWalker {
     {
         if ( codeBlock.getBlockType() == CodeBlockType.THREAD_ENTRY)
         {
-            threadStarts.add(codeBlock);
+            threadStarts.add((MethodBlock)codeBlock);
         }
         if ( codeBlock.hasSubBlocks())
         {

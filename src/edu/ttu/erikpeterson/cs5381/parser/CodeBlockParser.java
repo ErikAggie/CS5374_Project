@@ -32,6 +32,7 @@ public class CodeBlockParser {
 
     // Because the method pattern might match loops (for, while, etc.) we need to dispose of them first
     // Note that a for loop is handled in code because our parsing doesn't capture all of it (just the increment part after the last ';')
+    private static final Pattern FOR_PATTERN = Pattern.compile("\\s*for\\s*\\(.*;.*;.*\\)\\s*$");
     private static final Pattern FOR_EACH_PATTERN = Pattern.compile("for\\s\\(.*:.*\\)");
     private static final Pattern WHILE_PATTERN = Pattern.compile("(while)\\s*\\(");
     private static final Pattern DO_PATTERN = Pattern.compile("^do$");
@@ -137,11 +138,18 @@ public class CodeBlockParser {
         int previousCloseBracePosition = fileContents.lastIndexOf('}', firstOpenBrace-1);
         int mostRecentPosition = Math.max(Math.max(previousSemicolonPosition, previousOpenBracePosition), previousCloseBracePosition)+1;
         int blockInfoStart = 0;
+
+        // This is to check for for( ; ; ) { loops
+        Matcher forLoopMatcher = FOR_PATTERN.matcher(fileContents.substring(startPosition, firstOpenBrace));
         if (mostRecentPosition < 0) {
             blockInfo = fileContents.substring(0, startPosition);
         } else if ( firstOpenBrace == mostRecentPosition) {
             blockInfo = "";
             blockInfoStart = mostRecentPosition;
+        } else if ( forLoopMatcher.find()) {
+            // We've found a for ( ; ; ) { loop
+            blockInfo = forLoopMatcher.group(0);
+            blockInfoStart = firstOpenBrace - blockInfo.length();
         } else {
             blockInfo = fileContents.substring(mostRecentPosition+1, firstOpenBrace);
             blockInfoStart = mostRecentPosition+1;
@@ -282,7 +290,8 @@ public class CodeBlockParser {
 
         // TODO: May want to split out try/catch/finally at some point
         // (e.g. to check if locks done in a try are undone in a finally)
-        if ( FOR_EACH_PATTERN.matcher(blockInfo).find() ||
+        if ( FOR_PATTERN.matcher(blockInfo).find() ||
+             FOR_EACH_PATTERN.matcher(blockInfo).find() ||
              WHILE_PATTERN.matcher(blockInfo).find() ||
              DO_PATTERN.matcher(blockInfo).find() ||
              TRY_PATTERN.matcher(blockInfo).find() ||
