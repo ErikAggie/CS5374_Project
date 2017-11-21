@@ -43,7 +43,7 @@ public class CodeWalker {
     public List<LockInfo> walkThread(MethodBlock thread)
     {
         List<LockInfo> lockInfo = new ArrayList<>();
-        thread.walkThread(codeBlockList, lockInfo);
+        thread.walkMethod(codeBlockList, lockInfo);
 
         return lockInfo;
     }

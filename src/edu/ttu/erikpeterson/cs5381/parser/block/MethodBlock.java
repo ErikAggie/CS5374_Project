@@ -71,7 +71,7 @@ public class MethodBlock extends CodeBlock {
      * Walk through this method, looking for
      * @return
      */
-    public void walkThread(List<CodeBlock> allCodeBlocks, List<LockInfo> lockInfo)
+    public void walkMethod(List<CodeBlock> allCodeBlocks, List<LockInfo> lockInfoList)
     {
         // Get ready
         if ( !foundVariables)
@@ -83,18 +83,29 @@ public class MethodBlock extends CodeBlock {
         String[] statements = thisMethodsCode.split("[{;}]");
         for ( String statement : statements)
         {
-            Matcher synchronizedMatcher = SYNCHRONIZED_PATTERN.matcher(statement);
-            if ( synchronizedMatcher.find())
+            if ( checkForLocks(statement, lockInfoList))
             {
-                // Found a synchronized block. See if we can find the variable's type
-                String variable = synchronizedMatcher.group(1);
-                String classOfVariable = variables.get(variable);
-                if ( variable.isEmpty())
-                {
-                    // Try the
-                }
+                continue;
             }
         }
+    }
+
+    private boolean checkForLocks(String statement, List<LockInfo> lockInfoList)
+    {
+        Matcher synchronizedMatcher = SYNCHRONIZED_PATTERN.matcher(statement);
+        if ( synchronizedMatcher.find())
+        {
+            // Found a synchronized block. See if we can find the variable's type
+            String variable = synchronizedMatcher.group(1);
+            if ( variable.isEmpty())
+            {
+                // TODO: handle this...exception? log?
+                return false;
+            }
+            lockInfoList.add(new LockInfo(variable, this.parent.getName(), true));
+            return true;
+        }
+        return false;
     }
 
     /**
