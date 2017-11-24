@@ -82,6 +82,8 @@ public class CodeWalkerTest {
         assertEquals(walker.getThreadStarts().size(), 2);
 
         walker.walkAllThreadStarts();
+
+        List<String> deadlocks = walker.findDeadlocks();
         // TODO: get the deadlocks...
     }
 

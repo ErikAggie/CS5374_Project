@@ -41,6 +41,27 @@ public class MethodBlock extends CodeBlock {
         super(blockInfo, blockType, contents, fileContents, startPosition, endPosition);
     }
 
+    @Override
+    public boolean equals(Object other)
+    {
+        if ( !(other instanceof MethodBlock))
+        {
+            return false;
+        }
+
+        MethodBlock otherMethodBlock = (MethodBlock) other;
+        return ( startPosition == otherMethodBlock.startPosition &&
+                 endPosition == otherMethodBlock.endPosition &&
+                 blockType == otherMethodBlock.blockType &&
+                 blockInfo.equals(otherMethodBlock.blockInfo) &&
+                 contents.equals(otherMethodBlock.contents));
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * blockInfo.hashCode() + contents.hashCode();
+    }
+
     public void walkMethod(List<CodeBlock> classCodeBlocks)
     {
         if ( !foundVariables)
@@ -99,7 +120,7 @@ public class MethodBlock extends CodeBlock {
             String variable = synchronizedMatcher.group(1);
             if ( variable.isEmpty())
             {
-                // TODO: handle this...exception? log?
+                System.out.println("Found empty variable in " + statement);
                 return false;
             }
             lockInfoList.add(new LockInfo(variable, this.parent.getName(), true));

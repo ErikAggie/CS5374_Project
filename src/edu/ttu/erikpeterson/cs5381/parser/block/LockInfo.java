@@ -15,11 +15,19 @@ public class LockInfo {
         this.lockUnlock = lockUnlock;
     }
 
-    /**
-     * Equals override. Two LockInfos are equal if they have the same name and come from the same class.
-     * @param o
-     * @return
-     */
+    public String getName() {
+        return name;
+    }
+
+    public String getContainingClass() {
+        return containingClass;
+    }
+
+    public boolean isLock() {
+        return lockUnlock;
+    }
+
+    @Override
     public boolean equals(Object o)
     {
         if ( !(o instanceof LockInfo))
@@ -30,6 +38,15 @@ public class LockInfo {
         LockInfo other = (LockInfo) o;
 
         return (other.name.equals(name) &&
-                other.containingClass.equals(this.containingClass));
+                other.containingClass.equals(this.containingClass) &&
+                other.lockUnlock == lockUnlock);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name.hashCode();
+        result = 31 * result + containingClass.hashCode();
+        result = 31 * result + (lockUnlock ? 1 : 0);
+        return result;
     }
 }

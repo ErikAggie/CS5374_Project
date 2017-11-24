@@ -10,6 +10,7 @@ import java.util.*;
 public class CodeWalker {
     private final List<CodeBlock> codeBlockList;
     private final List<MethodBlock> threadStarts = new ArrayList<>();
+    Map<MethodBlock, List<LockInfo>> allLockInfo = new HashMap<>();
 
     public CodeWalker(List<CodeBlock> codeBlockList)
     {
@@ -29,10 +30,9 @@ public class CodeWalker {
      */
     public void walkAllThreadStarts()
     {
-        List<List<LockInfo>> allLockInfo = new ArrayList<>();
         for ( MethodBlock threadStart : threadStarts)
         {
-            walkThread(threadStart);
+            allLockInfo.put(threadStart, walkThread(threadStart));
         }
     }
 
@@ -46,6 +46,121 @@ public class CodeWalker {
         thread.walkMethod(codeBlockList, lockInfo);
 
         return lockInfo;
+    }
+
+    /**
+     * Scan for and return deadlocks
+     * @return Info on the potential deadlocks, if any
+     */
+    public List<String> findDeadlocks()
+    {
+        List<String> deadlockInfo = new ArrayList<>();
+
+        List<List<LockInfo>> allLockCombinations = new ArrayList<>();
+
+        for ( MethodBlock threadStart : allLockInfo.keySet())
+        {
+            List<LockInfo> thisThreadsLockInfo = allLockInfo.get(threadStart);
+            if ( thisThreadsLockInfo.isEmpty())
+            {
+                continue;
+            }
+            System.out.println("Starting in " + threadStart.getBlockInfo() + ":");
+
+            List<LockInfo> lockCombination = new ArrayList<>();
+
+            for ( LockInfo info : thisThreadsLockInfo)
+            {
+                if ( info.isLock())
+                {
+                    lockCombination.add(info);
+                }
+                else
+                {
+                    // Is an unlock. If there's more than one in this combination, we need to check it
+                    // before removing it from the "current" list
+                    if ( lockCombination.size() > 1)
+                    {
+                        checkLockCombination(allLockCombinations, lockCombination, deadlockInfo);
+
+                        // Save this lock combination for later
+                        allLockCombinations.add(lockCombination);
+                    }
+                    // Now remove the matching lock
+                    lockCombination.remove(new LockInfo(info.getName(), info.getContainingClass(), true));
+                }
+            }
+
+            // Handle the last lock combination, if any
+            if ( lockCombination.size() > 1)
+            {
+                checkLockCombination(allLockCombinations, lockCombination, deadlockInfo);
+                allLockCombinations.add(lockCombination);
+            }
+
+        }
+
+        return deadlockInfo;
+
+    }
+
+    private void checkLockCombination(List<List<LockInfo>> existingCombinations, List<LockInfo> currentCombinations, List<String> deadlockInfo)
+    {
+        if ( existingCombinations.isEmpty())
+        {
+            return;
+        }
+
+        // We need to check the other lock combinations to see if out particular combination has any elements
+        // in a different order elsewhere
+        //
+        // We'll find it by checking the positions of our locks against the positions of the existing combinations.
+        // If
+        for ( List<LockInfo> existingCombination : existingCombinations)
+        {
+            int lastPosition = 0;
+            List<Integer> positions = new ArrayList<Integer>();
+            for ( LockInfo ourLockInfo : currentCombinations)
+            {
+                // TODO: One of the threads doesn't have the correct parent...
+                int position = existingCombination.indexOf(ourLockInfo);
+                if ( position < 0)
+                {
+                    // To make the length of our index list match the other one...and to keep the later
+                    // check from freaking out over a missing lock, reuse the last position
+                    positions.add(lastPosition);
+                }
+                else
+                {
+                    System.out.println("Found a match for " + ourLockInfo.getName() + "!");
+                    // Found this lock in the other combination
+                    positions.add(position);
+                    lastPosition = position;
+                }
+            }
+
+            // Now let's see if there's a different order
+            lastPosition = 0;
+            // Keep track of the last lock we actually found. A lock that is not found in the other list will share the index
+            // of the previous lock.
+            int lastChangeIndex = 0;
+            for ( int i=0; i<positions.size(); i++)
+            {
+                int currentPosition = positions.get(i);
+                if ( positions.get(i) < lastPosition)
+                {
+                    // Here's a potential deadlock!
+                    deadlockInfo.add("Potential deadlock between variables " + currentCombinations.get(lastChangeIndex).getName() + " and " + currentCombinations.get(i).getName());
+                    System.out.println(deadlockInfo.get(deadlockInfo.size() - 1));
+                    lastChangeIndex = i;
+                }
+                else if ( positions.get(i) > lastPosition)
+                {
+                    lastChangeIndex = i;
+                }
+                lastPosition = currentPosition;
+            }
+        }
     }
 
     /**
