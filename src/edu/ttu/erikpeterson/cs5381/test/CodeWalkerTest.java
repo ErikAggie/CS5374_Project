@@ -15,7 +15,10 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class CodeWalkerTest {
+/**
+ * Test the CodeWalker class (i.e. walk the code to find potential deadlocks)
+ */
+class CodeWalkerTest {
 
     @Test
     void walkBasicClass()
@@ -83,8 +86,9 @@ public class CodeWalkerTest {
 
         walker.walkAllThreadStarts();
 
+        // Now we get to find the deadlock :)
         List<String> deadlocks = walker.findDeadlocks();
-        // TODO: get the deadlocks...
+        assertEquals(1, deadlocks.size());
     }
 
 }

@@ -15,7 +15,7 @@ public class MethodBlock extends CodeBlock {
     // Pattern for synchronized blocks
     private static final Pattern SYNCHRONIZED_PATTERN = Pattern.compile("\\s*synchronized\\s*\\(\\s*(\\w+)\\s*\\)");
 
-    final Map<String, String> variables = new HashMap<>();
+    private final Map<String, String> variables = new HashMap<>();
     private boolean foundVariables = false;
 
     private String thisMethodsCode = "";
@@ -62,14 +62,6 @@ public class MethodBlock extends CodeBlock {
         return 31 * blockInfo.hashCode() + contents.hashCode();
     }
 
-    public void walkMethod(List<CodeBlock> classCodeBlocks)
-    {
-        if ( !foundVariables)
-        {
-            findVariables();
-        }
-    }
-
     public Map<String, String> getVariables()
     {
         if ( !foundVariables)
@@ -89,8 +81,7 @@ public class MethodBlock extends CodeBlock {
     }
 
     /**
-     * Walk through this method, looking for
-     * @return
+     * Walk through this method, looking for locks and unlocks
      */
     public void walkMethod(List<CodeBlock> allCodeBlocks, List<LockInfo> lockInfoList)
     {
@@ -104,10 +95,7 @@ public class MethodBlock extends CodeBlock {
         String[] statements = thisMethodsCode.split("[{;}]");
         for ( String statement : statements)
         {
-            if ( checkForLocks(statement, lockInfoList))
-            {
-                continue;
-            }
+            checkForLocks(statement, lockInfoList);
         }
     }
 
@@ -123,11 +111,47 @@ public class MethodBlock extends CodeBlock {
                 System.out.println("Found empty variable in " + statement);
                 return false;
             }
-            lockInfoList.add(new LockInfo(variable, this.parent.getName(), true));
+
+            String type;
+
+            if ( variables.containsKey(variable))
+            {
+                type = variables.get(variable);
+            }
+            else
+            {
+                // Check the class variables
+                type = this.findTopParent().getClassVariables().get(variable);
+
+                if ( type == null)
+                {
+                    System.out.println("Could not find variable type in a synchronized block: " + variable + " (" + statement + ")");
+                    return false;
+                }
+            }
+
+            lockInfoList.add(new LockInfo(variable, type, true));
             return true;
         }
         return false;
     }
+
+    private ClassBlock findTopParent()
+    {
+        CodeBlock topParent = this;
+        while ( topParent.parent != null)
+        {
+            topParent = topParent.parent;
+        }
+
+        if ( !(topParent instanceof ClassBlock))
+        {
+            throw new IllegalArgumentException(topParent.getName() + " ought to be a ClassBlock, but isn't!");
+        }
+
+        return ((ClassBlock) topParent);
+    }
+
 
     /**
      * Remove all the interior method blocks so we have exactly what this method will execute.
@@ -157,8 +181,8 @@ public class MethodBlock extends CodeBlock {
      * Find code this method executes in a particular block.
      * Recurses as it finds subblocks (for loops, etc.)
      *
-     * @param block
-     * @param builder
+     * @param block CodeBlock we're examining
+     * @param builder Where to put the code
      */
     private void findCodeInBlock(CodeBlock block, StringBuilder builder)
     {
@@ -219,6 +243,7 @@ public class MethodBlock extends CodeBlock {
             {
                 if ( !variables.containsKey(variableDeclareAssignMatcher.group(3)))
                 {
+                    System.out.println("Adding " + variableDeclareAssignMatcher.group(3) + " as " + variableDeclareAssignMatcher.group(2));
                     variables.put(variableDeclareMatcher.group(3), variableDeclareMatcher.group(2));
                 }
             }

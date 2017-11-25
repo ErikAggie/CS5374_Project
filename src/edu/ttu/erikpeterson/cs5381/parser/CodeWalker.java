@@ -10,7 +10,7 @@ import java.util.*;
 public class CodeWalker {
     private final List<CodeBlock> codeBlockList;
     private final List<MethodBlock> threadStarts = new ArrayList<>();
-    Map<MethodBlock, List<LockInfo>> allLockInfo = new HashMap<>();
+    private Map<MethodBlock, List<LockInfo>> allLockInfo = new HashMap<>();
 
     public CodeWalker(List<CodeBlock> codeBlockList)
     {
@@ -40,7 +40,7 @@ public class CodeWalker {
      * Walk thorugh a specific thread
      * @param thread The code block to walk
      */
-    public List<LockInfo> walkThread(MethodBlock thread)
+    private List<LockInfo> walkThread(MethodBlock thread)
     {
         List<LockInfo> lockInfo = new ArrayList<>();
         thread.walkMethod(codeBlockList, lockInfo);
@@ -65,7 +65,6 @@ public class CodeWalker {
             {
                 continue;
             }
-            System.out.println("Starting in " + threadStart.getBlockInfo() + ":");
 
             List<LockInfo> lockCombination = new ArrayList<>();
 
@@ -87,7 +86,7 @@ public class CodeWalker {
                         allLockCombinations.add(lockCombination);
                     }
                     // Now remove the matching lock
-                    lockCombination.remove(new LockInfo(info.getName(), info.getContainingClass(), true));
+                    lockCombination.remove(new LockInfo(info.getName(), info.getType(), true));
                 }
             }
 
@@ -122,7 +121,6 @@ public class CodeWalker {
             List<Integer> positions = new ArrayList<Integer>();
             for ( LockInfo ourLockInfo : currentCombinations)
             {
-                // TODO: One of the threads doesn't have the correct parent...
                 int position = existingCombination.indexOf(ourLockInfo);
                 if ( position < 0)
                 {
@@ -132,7 +130,6 @@ public class CodeWalker {
                 }
                 else
                 {
-                    System.out.println("Found a match for " + ourLockInfo.getName() + "!");
                     // Found this lock in the other combination
                     positions.add(position);
                     lastPosition = position;
@@ -151,7 +148,6 @@ public class CodeWalker {
                 {
                     // Here's a potential deadlock!
                     deadlockInfo.add("Potential deadlock between variables " + currentCombinations.get(lastChangeIndex).getName() + " and " + currentCombinations.get(i).getName());
-                    System.out.println(deadlockInfo.get(deadlockInfo.size() - 1));
                     lastChangeIndex = i;
                 }
                 else if ( positions.get(i) > lastPosition)
