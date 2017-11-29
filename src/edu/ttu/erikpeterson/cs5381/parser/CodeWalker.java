@@ -118,7 +118,7 @@ public class CodeWalker {
         for ( List<LockInfo> existingCombination : existingCombinations)
         {
             int lastPosition = 0;
-            List<Integer> positions = new ArrayList<Integer>();
+            List<Integer> positions = new ArrayList<>();
             for ( LockInfo ourLockInfo : currentCombinations)
             {
                 int position = existingCombination.indexOf(ourLockInfo);
@@ -147,7 +147,11 @@ public class CodeWalker {
                 if ( positions.get(i) < lastPosition)
                 {
                     // Here's a potential deadlock!
-                    deadlockInfo.add("Potential deadlock between variables " + currentCombinations.get(lastChangeIndex).getName() + " and " + currentCombinations.get(i).getName());
+                    deadlockInfo.add("Potential deadlock between variables " +
+                                     currentCombinations.get(lastChangeIndex).getName() + " of type " +
+                                     currentCombinations.get(lastChangeIndex).getType() + " and " +
+                                     currentCombinations.get(i).getName() + " of type " +
+                                     currentCombinations.get(i).getType());
                     lastChangeIndex = i;
                 }
                 else if ( positions.get(i) > lastPosition)

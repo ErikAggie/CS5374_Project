@@ -18,6 +18,16 @@ public class SynchronizedDeadlock {
     };
 
     private Thread thread2 = new Thread(() -> {
+        this.myMethod();
+    });
+
+    private void myMethod()
+    {
+        lockInOtherOrder();
+    }
+
+    private void lockInOtherOrder()
+    {
         synchronized(string2)
         {
             synchronized (string1)
@@ -25,5 +35,5 @@ public class SynchronizedDeadlock {
                 System.out.println("2 then 1");
             }
         }
-    });
+    }
 }

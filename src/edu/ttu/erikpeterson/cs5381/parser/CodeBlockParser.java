@@ -234,7 +234,7 @@ public class CodeBlockParser {
                 codeBlock.setName(classMatcher.group(1));
             }
         }
-        else if ( blockType == CodeBlockType.METHOD)
+        else if ( blockType == CodeBlockType.METHOD || blockType == CodeBlockType.THREAD_ENTRY)
         {
             // Grab the method name
             Matcher methodMatcher = METHOD_PATTERN.matcher(codeBlock.getBlockInfo());

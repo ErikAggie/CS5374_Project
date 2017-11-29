@@ -15,6 +15,13 @@ public class MethodBlock extends CodeBlock {
     // Pattern for synchronized blocks
     private static final Pattern SYNCHRONIZED_PATTERN = Pattern.compile("\\s*synchronized\\s*\\(\\s*(\\w+)\\s*\\)");
 
+    // Pattern for method calls
+    private static final Pattern METHOD_CALL_PATTERN_1 = Pattern.compile("\\s*(\\w+)\\.(\\w+)\\s*\\(");
+    // This one is for new Something().method(...)
+    private static final Pattern METHOD_CALL_PATTERN_2 = Pattern.compile("new\\s+(\\w+)\\s*\\([\\s\\w]*\\)\\s*\\.\\s*(\\w+)\\s*\\(");
+    private static final Pattern INTRA_CLASS_METHOD_CALL = Pattern.compile("\\s*(\\w+)\\s*\\(");
+
+
     private final Map<String, String> variables = new HashMap<>();
     private boolean foundVariables = false;
 
@@ -96,10 +103,11 @@ public class MethodBlock extends CodeBlock {
         for ( String statement : statements)
         {
             checkForLocks(statement, lockInfoList);
+            checkForMethodCall(statement, allCodeBlocks, lockInfoList);
         }
     }
 
-    private boolean checkForLocks(String statement, List<LockInfo> lockInfoList)
+    private void checkForLocks(String statement, List<LockInfo> lockInfoList)
     {
         Matcher synchronizedMatcher = SYNCHRONIZED_PATTERN.matcher(statement);
         if ( synchronizedMatcher.find())
@@ -109,31 +117,101 @@ public class MethodBlock extends CodeBlock {
             if ( variable.isEmpty())
             {
                 System.out.println("Found empty variable in " + statement);
-                return false;
+                return;
             }
 
             String type;
 
-            if ( variables.containsKey(variable))
+            if ( !variables.containsKey(variable)) {
+                return;
+            }
+
+            type = variables.get(variable);
+            lockInfoList.add(new LockInfo(variable, type, true));
+            return;
+        }
+
+        // TODO: add unlock and other lock types
+    }
+
+    private void checkForMethodCall(String statement, List<CodeBlock> allCodeBlocks, List<LockInfo> lockInfoList)
+    {
+        Matcher regularCallMatcher = METHOD_CALL_PATTERN_1.matcher(statement);
+        Matcher newCallMatcher = METHOD_CALL_PATTERN_2.matcher(statement);
+        Matcher intraClassMatcher = INTRA_CLASS_METHOD_CALL.matcher(statement);
+        String variableOrClass;
+        String method;
+
+        // Note that this does not cover nested calls e.g. myString.substring(...).length
+        if ( regularCallMatcher.find())
+        {
+            variableOrClass = regularCallMatcher.group(1);
+            method = regularCallMatcher.group(2);
+        }
+        else if ( newCallMatcher.find())
+        {
+            variableOrClass = newCallMatcher.group(1);
+            method = newCallMatcher.group(2);
+        }
+        // This regex will also catch new Thread(), in which we need to call the constructor
+        else if ( intraClassMatcher.find())
+        {
+            if (statement.contains("new "))
             {
-                type = variables.get(variable);
+                // This is a call to a constructor
+                variableOrClass = intraClassMatcher.group(1);
+                method = intraClassMatcher.group(1);
             }
             else
             {
-                // Check the class variables
-                type = this.findTopParent().getClassVariables().get(variable);
+                variableOrClass = findTopParent().getName();
+                method = intraClassMatcher.group(1);
+            }
+        }
+        else
+        {
+            // No match
+            return;
+        }
 
-                if ( type == null)
+        // Note that there's a hole here for inner classes (such as calling OuterClass.this.method())
+        if ( variableOrClass.equals("this"))
+        {
+            variableOrClass = this.parent.getName();
+        }
+
+        if ( variables.containsKey(variableOrClass))
+        {
+            // This is a variable; we want the class
+            variableOrClass = variables.get(variableOrClass);
+        }
+        // Remove any generic info (<..>)
+        variableOrClass = variableOrClass.replaceAll("<\\s*>", "");
+
+        for ( CodeBlock codeBlock : allCodeBlocks)
+        {
+            if (codeBlock.getName().equals(variableOrClass))
+            {
+                // Found one of our classes. See if it has this method
+                // Another hole here: this doesn't consider method overloads (e.g. substring(int) and substring(int, int)
+                for ( CodeBlock subCodeBlock : codeBlock.getSubCodeBlocks())
                 {
-                    System.out.println("Could not find variable type in a synchronized block: " + variable + " (" + statement + ")");
-                    return false;
+                    if ( subCodeBlock == null || subCodeBlock.getName() == null)
+                    {
+                        continue;
+                    }
+                    // Be sure we don't include calls to ourself (recursive and catching the declaration line)
+                    if ( subCodeBlock instanceof MethodBlock &&
+                         subCodeBlock != this &&
+                         subCodeBlock.getName().equals(method))
+                    {
+                        // We found something we should call!
+                        ((MethodBlock) subCodeBlock).walkMethod(allCodeBlocks, lockInfoList);
+                        return;
+                    }
                 }
             }
-
-            lockInfoList.add(new LockInfo(variable, type, true));
-            return true;
         }
-        return false;
     }
 
     private ClassBlock findTopParent()
@@ -248,6 +326,9 @@ public class MethodBlock extends CodeBlock {
                 }
             }
         }
+
+        // Add all the class variables so they're easier to find
+        variables.putAll(findTopParent().getClassVariables());
         foundVariables = true;
     }
 
