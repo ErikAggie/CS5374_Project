@@ -1,6 +1,5 @@
 package edu.ttu.erikpeterson.cs5381.parser.block;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,7 +127,6 @@ public class MethodBlock extends CodeBlock {
 
             type = variables.get(variable);
             lockInfoList.add(new LockInfo(variable, type, true));
-            return;
         }
 
         // TODO: add unlock and other lock types
@@ -230,7 +228,6 @@ public class MethodBlock extends CodeBlock {
         return ((ClassBlock) topParent);
     }
 
-
     /**
      * Remove all the interior method blocks so we have exactly what this method will execute.
      * Delayed construction to allow subblocks to be added
@@ -250,39 +247,42 @@ public class MethodBlock extends CodeBlock {
         }
 
         StringBuilder builder = new StringBuilder();
-        findCodeInBlock(this, builder);
+        // The first '{' will be the end of the method's signiture. Stip it
+        int startLoc = fileContents.indexOf("{", startPosition) + 1;
+
+        findCodeInBlock(this, builder, startLoc);
 
         thisMethodsCode = builder.toString();
     }
 
     /**
-     * Find code this method executes in a particular block.
-     * Recurses as it finds subblocks (for loops, etc.)
+     * Find all the code in a block. Recurses to sub-blocks as needed
      *
-     * @param block CodeBlock we're examining
-     * @param builder Where to put the code
+     * @param block The block to examine
+     * @param builder Holds the code we parse out
+     * @param startLoc Location to start looking
+     * @return The end point of this block
      */
-    private void findCodeInBlock(CodeBlock block, StringBuilder builder)
+    private int findCodeInBlock(CodeBlock block, StringBuilder builder, int startLoc)
     {
         if ( block != this &&
              block instanceof MethodBlock)
         {
             // skip it
-            return;
+            return block.endPosition;
         }
-
-        int startLoc = fileContents.indexOf("{", block.startPosition) + 1;
-        builder.append(fileContents.substring(block.startPosition, startLoc));
 
         for ( CodeBlock subBlock : block.subCodeBlocks)
         {
-            builder.append(fileContents.substring(startLoc, subBlock.startPosition));
-            findCodeInBlock(subBlock, builder);
-            startLoc = subBlock.endPosition + 1;
+            // Grab everything up to the '{' at the beginning of this block
+            int startOfNextBlock = fileContents.indexOf("{", startLoc) + 1;
+            builder.append(fileContents.substring(startLoc, startOfNextBlock));
+            startLoc = findCodeInBlock(subBlock, builder, startOfNextBlock);
         }
 
         // Now add whatever's left
-        builder.append(fileContents.substring(startLoc, endPosition));
+        builder.append(fileContents.substring(startLoc, block.endPosition));
+        return block.endPosition;
     }
 
     /**
@@ -321,7 +321,6 @@ public class MethodBlock extends CodeBlock {
             {
                 if ( !variables.containsKey(variableDeclareAssignMatcher.group(3)))
                 {
-                    System.out.println("Adding " + variableDeclareAssignMatcher.group(3) + " as " + variableDeclareAssignMatcher.group(2));
                     variables.put(variableDeclareMatcher.group(3), variableDeclareMatcher.group(2));
                 }
             }
