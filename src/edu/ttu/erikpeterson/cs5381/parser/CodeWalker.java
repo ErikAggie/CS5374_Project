@@ -83,7 +83,10 @@ public class CodeWalker {
                         checkLockCombination(allLockCombinations, lockCombination, deadlockInfo);
 
                         // Save this lock combination for later
-                        allLockCombinations.add(lockCombination);
+                        // Have to copy it since this list will change!
+                        List<LockInfo> thisCombination = new ArrayList<>();
+                        thisCombination.addAll(lockCombination);
+                        allLockCombinations.add(thisCombination);
                     }
                     // Now remove the matching lock
                     lockCombination.remove(new LockInfo(info.getName(), info.getType(), true));

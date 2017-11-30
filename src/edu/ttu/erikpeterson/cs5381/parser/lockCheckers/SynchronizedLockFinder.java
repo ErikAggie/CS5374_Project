@@ -51,7 +51,7 @@ public class SynchronizedLockFinder implements LockFinder {
         }
 
         // Check to see if there's an '{' or '}' (there will be at most one of them
-        /*if ( statement.contains("{"))
+        if ( statement.contains("{"))
         {
             currentOpenParenLevel++;
         }
@@ -64,7 +64,7 @@ public class SynchronizedLockFinder implements LockFinder {
                 LockInfo lockJustUnlocked = mapOfFoundSynchronizedBlocks.remove(currentOpenParenLevel);
                 lockInfoList.add(new LockInfo(lockJustUnlocked.getName(), lockJustUnlocked.getType(), false));
             }
-        }*/
+        }
 
     }
 }

@@ -82,7 +82,7 @@ class CodeWalkerTest {
         assertEquals(variables.get("string2"), "String");
 
         CodeWalker walker = new CodeWalker(codeBlocks);
-        assertEquals(walker.getThreadStarts().size(), 2);
+        assertEquals(walker.getThreadStarts().size(), 3);
 
         walker.walkAllThreadStarts();
 

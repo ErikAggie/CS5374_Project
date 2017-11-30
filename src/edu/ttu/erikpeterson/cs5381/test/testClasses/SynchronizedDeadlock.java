@@ -36,4 +36,19 @@ public class SynchronizedDeadlock {
             }
         }
     }
+
+    /**
+     * This one should NOT be marked, since we're unlocking string2 before locking string1
+     */
+    private Thread thread3 = new Thread(() -> {
+        synchronized(string2)
+        {
+            System.out.println("2 only");
+        }
+
+        synchronized(string1)
+        {
+            System.out.println("1 only");
+        }
+    });
 }
