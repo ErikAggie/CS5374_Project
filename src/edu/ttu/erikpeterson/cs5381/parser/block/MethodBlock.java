@@ -1,6 +1,10 @@
 package edu.ttu.erikpeterson.cs5381.parser.block;
 
+import edu.ttu.erikpeterson.cs5381.parser.lockCheckers.LockFinder;
+import edu.ttu.erikpeterson.cs5381.parser.lockCheckers.LockFinderFactory;
+
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -12,7 +16,6 @@ public class MethodBlock extends CodeBlock {
     private static final Pattern VARIABLE_DECLARE = Pattern.compile("^(final\\s+)?([\\w\\<\\>]+)\\s+(\\w+)$");
 
     // Pattern for synchronized blocks
-    private static final Pattern SYNCHRONIZED_PATTERN = Pattern.compile("\\s*synchronized\\s*\\(\\s*(\\w+)\\s*\\)");
 
     // Pattern for method calls
     private static final Pattern METHOD_CALL_PATTERN_1 = Pattern.compile("\\s*(\\w+)\\.(\\w+)\\s*\\(");
@@ -23,6 +26,8 @@ public class MethodBlock extends CodeBlock {
 
     private final Map<String, String> variables = new HashMap<>();
     private boolean foundVariables = false;
+    private boolean walkingMethod = false;
+    private List<LockFinder> lockFinders;
 
     private String thisMethodsCode = "";
 
@@ -91,6 +96,14 @@ public class MethodBlock extends CodeBlock {
      */
     public void walkMethod(List<CodeBlock> allCodeBlocks, List<LockInfo> lockInfoList)
     {
+        // Don't allow recursion or returning to this method from elsewhere
+        if ( walkingMethod)
+        {
+            return;
+        }
+        walkingMethod = true;
+        lockFinders = LockFinderFactory.buildAllLockFinders(this);
+
         // Get ready
         if ( !foundVariables)
         {
@@ -98,38 +111,67 @@ public class MethodBlock extends CodeBlock {
         }
         findThisMethodsCode();
 
-        String[] statements = thisMethodsCode.split("[{;}]");
+        List<String> statements = splitMethodIntoStatements();//thisMethodsCode.split("[{;}]");
         for ( String statement : statements)
         {
             checkForLocks(statement, lockInfoList);
             checkForMethodCall(statement, allCodeBlocks, lockInfoList);
         }
+        walkingMethod = false;
+    }
+
+    private List<String> splitMethodIntoStatements()
+    {
+        List<String> statements = new LinkedList<>();
+
+        int indexOfSemicolon;
+        int indexOfOpenBrace;
+        int indexOfCloseBrace;
+        int lastIndex = 0;
+
+        while ( true)
+        {
+            indexOfSemicolon = thisMethodsCode.indexOf(';', lastIndex);
+            indexOfOpenBrace = thisMethodsCode.indexOf('{', lastIndex);
+            indexOfCloseBrace = thisMethodsCode.indexOf('}', lastIndex);
+
+            if ( indexOfSemicolon < 0)
+            {
+                indexOfSemicolon = Integer.MAX_VALUE;
+            }
+            if ( indexOfOpenBrace < 0)
+            {
+                indexOfOpenBrace = Integer.MAX_VALUE;
+            }
+            if ( indexOfCloseBrace < 0)
+            {
+                indexOfCloseBrace = Integer.MAX_VALUE;
+            }
+
+            int nextBreak = Math.min(indexOfSemicolon, Math.min(indexOfOpenBrace, indexOfCloseBrace));
+
+            if ( nextBreak == Integer.MAX_VALUE)
+            {
+                // Didn't find anything
+                break;
+            }
+
+            // Add one so we get the ;/{/}
+            nextBreak++;
+
+            statements.add(thisMethodsCode.substring(lastIndex, nextBreak));
+            lastIndex = nextBreak;
+        }
+
+        return statements;
     }
 
     private void checkForLocks(String statement, List<LockInfo> lockInfoList)
     {
-        Matcher synchronizedMatcher = SYNCHRONIZED_PATTERN.matcher(statement);
-        if ( synchronizedMatcher.find())
+        for ( LockFinder lockFinder : lockFinders)
         {
-            // Found a synchronized block. See if we can find the variable's type
-            String variable = synchronizedMatcher.group(1);
-            if ( variable.isEmpty())
-            {
-                System.out.println("Found empty variable in " + statement);
-                return;
-            }
-
-            String type;
-
-            if ( !variables.containsKey(variable)) {
-                return;
-            }
-
-            type = variables.get(variable);
-            lockInfoList.add(new LockInfo(variable, type, true));
+            lockFinder.checkStatement(statement, lockInfoList);
         }
-
-        // TODO: add unlock and other lock types
     }
 
     private void checkForMethodCall(String statement, List<CodeBlock> allCodeBlocks, List<LockInfo> lockInfoList)
@@ -198,9 +240,8 @@ public class MethodBlock extends CodeBlock {
                     {
                         continue;
                     }
-                    // Be sure we don't include calls to ourself (recursive and catching the declaration line)
+
                     if ( subCodeBlock instanceof MethodBlock &&
-                         subCodeBlock != this &&
                          subCodeBlock.getName().equals(method))
                     {
                         // We found something we should call!
