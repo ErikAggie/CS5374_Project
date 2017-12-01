@@ -89,7 +89,7 @@ public class CodeWalker {
                         allLockCombinations.add(thisCombination);
                     }
                     // Now remove the matching lock
-                    lockCombination.remove(new LockInfo(info.getName(), info.getType(), true));
+                    lockCombination.remove(new LockInfo(info.getName(), info.getType(), info.getWhereFound(), true));
                 }
             }
 
@@ -151,10 +151,8 @@ public class CodeWalker {
                 {
                     // Here's a potential deadlock!
                     deadlockInfo.add("Potential deadlock between variables " +
-                                     currentCombinations.get(lastChangeIndex).getName() + " of type " +
-                                     currentCombinations.get(lastChangeIndex).getType() + " and " +
-                                     currentCombinations.get(i).getName() + " of type " +
-                                     currentCombinations.get(i).getType());
+                                     currentCombinations.get(lastChangeIndex) + " and " +
+                                     currentCombinations.get(i));
                     lastChangeIndex = i;
                 }
                 else if ( positions.get(i) > lastPosition)

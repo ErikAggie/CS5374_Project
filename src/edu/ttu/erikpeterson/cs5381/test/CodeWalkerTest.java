@@ -82,14 +82,18 @@ class CodeWalkerTest {
         assertEquals(variables.get("string2"), "String");
 
         CodeWalker walker = new CodeWalker(codeBlocks);
-        assertEquals(walker.getThreadStarts().size(), 3);
+        assertEquals(walker.getThreadStarts().size(), 5);
 
         walker.walkAllThreadStarts();
 
         // Now we get to find the deadlock :)
         List<String> deadlocks = walker.findDeadlocks();
-        assertEquals(1, deadlocks.size());
-        System.out.println("Found deadlock! " + deadlocks.get(0));
+        assertEquals(2, deadlocks.size());
+        for ( String deadlockInfo : deadlocks)
+        {
+            System.out.println(deadlockInfo);
+        }
+
     }
 
 }

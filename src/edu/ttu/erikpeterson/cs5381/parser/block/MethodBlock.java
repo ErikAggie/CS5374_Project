@@ -3,6 +3,7 @@ package edu.ttu.erikpeterson.cs5381.parser.block;
 import edu.ttu.erikpeterson.cs5381.parser.lockCheckers.LockFinder;
 import edu.ttu.erikpeterson.cs5381.parser.lockCheckers.LockFinderFactory;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -104,6 +105,15 @@ public class MethodBlock extends CodeBlock {
         walkingMethod = true;
         lockFinders = LockFinderFactory.buildAllLockFinders(this);
 
+        // Check to see if this method is synchronized. If so, add a lock with the class's name
+        ClassBlock classBlock = getClassParent();
+        boolean synchronizedMethod = false;
+        if ( blockInfo.contains(" synchronized "))
+        {
+            synchronizedMethod = true;
+            lockInfoList.add(new LockInfo("this", classBlock.getName(), getClassAndName(), true));
+        }
+
         // Get ready
         if ( !foundVariables)
         {
@@ -117,7 +127,35 @@ public class MethodBlock extends CodeBlock {
             checkForLocks(statement, lockInfoList);
             checkForMethodCall(statement, allCodeBlocks, lockInfoList);
         }
+
+        if ( synchronizedMethod)
+        {
+            // Remove the lock on the class object
+            lockInfoList.add(new LockInfo("this", classBlock.getName(), getClassAndName(), false));
+        }
         walkingMethod = false;
+    }
+
+    public ClassBlock getClassParent()
+    {
+        CodeBlock parent = getParent();
+        while ( (parent != null) &&
+               !(parent instanceof ClassBlock))
+        {
+            parent = parent.getParent();
+        }
+
+        if ( parent == null)
+        {
+            throw new IllegalArgumentException("No class parent of " + getName());
+        }
+
+        return (ClassBlock) parent;
+    }
+
+    public String getClassAndName()
+    {
+        return getClassParent().getName() + "." + name;
     }
 
     private List<String> splitMethodIntoStatements()
@@ -288,7 +326,7 @@ public class MethodBlock extends CodeBlock {
         }
 
         StringBuilder builder = new StringBuilder();
-        // The first '{' will be the end of the method's signiture. Stip it
+        // The first '{' will be the end of the method's signature. Skip it
         int startLoc = fileContents.indexOf("{", startPosition) + 1;
 
         findCodeInBlock(this, builder, startLoc);

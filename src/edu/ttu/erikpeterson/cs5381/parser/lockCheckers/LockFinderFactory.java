@@ -7,11 +7,11 @@ import java.util.List;
 
 public class LockFinderFactory {
 
-    public static List<LockFinder> buildAllLockFinders(MethodBlock block)
+    public static List<LockFinder> buildAllLockFinders(MethodBlock methodBlock)
     {
         List<LockFinder> lockFinders = new LinkedList<>();
 
-        lockFinders.add(new SynchronizedLockFinder(block.getVariables()));
+        lockFinders.add(new SynchronizedLockFinder(methodBlock));
 
         return lockFinders;
     }

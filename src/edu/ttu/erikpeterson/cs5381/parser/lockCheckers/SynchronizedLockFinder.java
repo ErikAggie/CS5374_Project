@@ -1,6 +1,7 @@
 package edu.ttu.erikpeterson.cs5381.parser.lockCheckers;
 
 import edu.ttu.erikpeterson.cs5381.parser.block.LockInfo;
+import edu.ttu.erikpeterson.cs5381.parser.block.MethodBlock;
 
 import java.util.HashMap;
 import java.util.List;
@@ -8,17 +9,16 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SynchronizedLockFinder implements LockFinder {
+public class SynchronizedLockFinder extends LockFinder {
 
     private static final Pattern SYNCHRONIZED_PATTERN = Pattern.compile("\\s*synchronized\\s*\\(\\s*(\\w+)\\s*\\)");
 
-    private Map<String, String> variables;
     private int currentOpenParenLevel;
     private Map<Integer, LockInfo> mapOfFoundSynchronizedBlocks = new HashMap<>();
 
-    SynchronizedLockFinder(Map<String, String> variables)
+    SynchronizedLockFinder(MethodBlock methodBlock)
     {
-        this.variables = variables;
+        super(methodBlock);
     }
 
     @Override
@@ -37,13 +37,22 @@ public class SynchronizedLockFinder implements LockFinder {
 
             String type;
 
-            if ( !variables.containsKey(variable)) {
+            if ( variable.equals("this"))
+            {
+                type = methodBlock.getClassParent().getName();
+            }
+            else if ( variables.containsKey(variable))
+            {
+                type = variables.get(variable);
+            }
+            else
+            {
+                // Don't know what this is
+                System.err.println("Locking unknown variable " + variable + " in " + methodBlock.getClassAndName());
                 return;
             }
 
-            type = variables.get(variable);
-
-            LockInfo lockInfo = new LockInfo(variable, type, true);
+            LockInfo lockInfo = new LockInfo(variable, type, methodBlock.getClassAndName(), true);
 
             // When we find a '}' that gets us back to this level we'll mark this unlocked
             mapOfFoundSynchronizedBlocks.put(currentOpenParenLevel, lockInfo);
@@ -62,7 +71,7 @@ public class SynchronizedLockFinder implements LockFinder {
             if ( mapOfFoundSynchronizedBlocks.containsKey(currentOpenParenLevel))
             {
                 LockInfo lockJustUnlocked = mapOfFoundSynchronizedBlocks.remove(currentOpenParenLevel);
-                lockInfoList.add(new LockInfo(lockJustUnlocked.getName(), lockJustUnlocked.getType(), false));
+                lockInfoList.add(new LockInfo(lockJustUnlocked.getName(), lockJustUnlocked.getType(), methodBlock.getClassAndName(), false));
             }
         }
 

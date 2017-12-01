@@ -6,13 +6,17 @@ package edu.ttu.erikpeterson.cs5381.parser.block;
 public class LockInfo {
     private final String name;
     private final String type;
-    private final boolean lockUnlock;
 
-    public LockInfo(String name, String containingClass, boolean lockUnlock)
+
+    private final String whereFound;
+    private final boolean lock;
+
+    public LockInfo(String name, String containingClass, String whereFound, boolean lock)
     {
         this.name = name;
         this.type = containingClass;
-        this.lockUnlock = lockUnlock;
+        this.whereFound = whereFound;
+        this.lock = lock;
     }
 
     public String getName() {
@@ -23,8 +27,10 @@ public class LockInfo {
         return type;
     }
 
+    public String getWhereFound() { return whereFound; }
+
     public boolean isLock() {
-        return lockUnlock;
+        return lock;
     }
 
     @Override
@@ -39,14 +45,25 @@ public class LockInfo {
 
         return (other.name.equals(name) &&
                 other.type.equals(this.type) &&
-                other.lockUnlock == lockUnlock);
+                other.lock == lock);
     }
 
     @Override
     public int hashCode() {
         int result = name.hashCode();
         result = 31 * result + type.hashCode();
-        result = 31 * result + (lockUnlock ? 1 : 0);
+        result = 31 * result + (lock ? 1 : 0);
         return result;
+    }
+
+    @Override
+    public String toString()
+    {
+        String returnValue = "Variable " + name + " (" + type + ") found in " + whereFound;
+        if ( !lock)
+        {
+            returnValue = returnValue + " (unlock)";
+        }
+        return returnValue;
     }
 }
