@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 public class ClassBlock extends CodeBlock {
 
-    private static final Pattern VARIABLE_DECLARE_PATTERN = Pattern.compile("(private|protected|public)?\\s+(static)?(final)?\\s+(\\w+)\\s+(\\w+)(\\s*=)?(\\s\\w)?$");
+    private static final Pattern VARIABLE_DECLARE_PATTERN = Pattern.compile("^(private|protected|public)?\\s*(static)?\\s*(final)?\\s+([\\w\\[\\]]+)\\s+(\\w+)(\\s*=)?[\\s\\w\\(\\)\\[\\]]*$");
 
     private Map<String, String> classVariables;
 
@@ -68,10 +68,10 @@ public class ClassBlock extends CodeBlock {
 
         int currentStartPosition = this.startPosition + this.blockInfo.length();
 
-        for ( int i=0; i<subCodeBlocks.size(); i++)
+        for (CodeBlock subCodeBlock : subCodeBlocks)
         {
-            parseForClassVariables(fileContents.substring(currentStartPosition+1, subCodeBlocks.get(i).startPosition));
-            currentStartPosition = subCodeBlocks.get(i).endPosition + 1;
+            parseForClassVariables(fileContents.substring(currentStartPosition + 1, subCodeBlock.startPosition));
+            currentStartPosition = subCodeBlock.endPosition + 1;
         }
 
         parseForClassVariables(fileContents.substring(currentStartPosition, endPosition));

@@ -88,8 +88,8 @@ public class CodeWalker {
                         thisCombination.addAll(lockCombination);
                         allLockCombinations.add(thisCombination);
                     }
-                    // Now remove the matching lock
-                    lockCombination.remove(new LockInfo(info.getName(), info.getType(), info.getWhereFound(), true));
+                    // Now remove the matching lock (not the one we just found since it's an unlock)
+                    lockCombination.remove(new LockInfo(info, true));
                 }
             }
 

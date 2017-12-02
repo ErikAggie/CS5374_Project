@@ -11,11 +11,32 @@ public class LockInfo {
     private final String whereFound;
     private final boolean lock;
 
-    public LockInfo(String name, String containingClass, String whereFound, boolean lock)
+    /**
+     * Constructor
+     *
+     * @param name Name of this lock
+     * @param type Type of this lock
+     * @param method Where the lock was found
+     * @param lock Lock or unlock?
+     */
+    public LockInfo(String name, String type, MethodBlock method, boolean lock)
     {
         this.name = name;
-        this.type = containingClass;
-        this.whereFound = whereFound;
+        this.type = type;
+        this.whereFound = method.getClassAndName();
+        this.lock = lock;
+    }
+
+    /**
+     * Constructor based on another lock, but with the ability to change the lock behavior.
+     * @param other LockInfo
+     * @param lock Is this a lock or unlock?
+     */
+    public LockInfo(LockInfo other, boolean lock)
+    {
+        this.name = other.name;
+        this.type = other.type;
+        this.whereFound = other.whereFound;
         this.lock = lock;
     }
 

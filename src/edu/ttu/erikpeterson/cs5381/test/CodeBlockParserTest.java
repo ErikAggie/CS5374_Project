@@ -40,7 +40,6 @@ class CodeBlockParserTest {
         assertEquals(classBlock.getName(), "BasicClass");
         assertTrue(classBlock.getContents().contains("for ( int i=0; i<10; i++"));
         assertNotNull(classBlock.getMethodBlock("method1"));
-        assertTrue(classBlock.getMethodBlock("method1") instanceof MethodBlock);
         assertNotNull(classBlock.getMethodBlock("method2"));
         assertEquals(classBlock.getSubCodeBlock(0).getName(), "BasicClass");
         assertEquals(classBlock.getSubCodeBlock(1).getName(), "method1");
@@ -117,6 +116,6 @@ class CodeBlockParserTest {
             fail("Unable to parse directory " + testDirectory.getAbsolutePath() + ": " + e.getMessage());
         }
 
-        assertEquals(codeBlocks.size(), 3);
+        assertEquals(codeBlocks.size(), 4);
     }
 }

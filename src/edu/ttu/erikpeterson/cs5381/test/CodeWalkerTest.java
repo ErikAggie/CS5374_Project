@@ -96,4 +96,27 @@ class CodeWalkerTest {
 
     }
 
+    @Test
+    void parseReentrantLockExample() throws FileNotFoundException, BlockParsingException {
+        List<CodeBlock> codeBlocks = CodeBlockParser.parse(new File(Util.TEST_CLASS_PATH + "/ReentrantLockExample.java"));
+        ClassBlock classBlock = (ClassBlock) codeBlocks.get(0);
+        Map<String, String> variables = classBlock.getClassVariables();
+        assertEquals("ReentrantLock", variables.get("lock1"));
+        assertEquals("ReentrantLock", variables.get("lock2"));
+
+        CodeWalker walker = new CodeWalker(codeBlocks);
+        assertEquals(walker.getThreadStarts().size(), 2);
+
+        walker.walkAllThreadStarts();
+
+        // Now we get to find the deadlock :)
+        List<String> deadlocks = walker.findDeadlocks();
+        assertEquals(1, deadlocks.size());
+        for ( String deadlockInfo : deadlocks)
+        {
+            System.out.println(deadlockInfo);
+        }
+
+    }
+
 }

@@ -111,7 +111,7 @@ public class MethodBlock extends CodeBlock {
         if ( blockInfo.contains(" synchronized "))
         {
             synchronizedMethod = true;
-            lockInfoList.add(new LockInfo("this", classBlock.getName(), getClassAndName(), true));
+            lockInfoList.add(new LockInfo("this", classBlock.getName(), this, true));
         }
 
         // Get ready
@@ -131,7 +131,7 @@ public class MethodBlock extends CodeBlock {
         if ( synchronizedMethod)
         {
             // Remove the lock on the class object
-            lockInfoList.add(new LockInfo("this", classBlock.getName(), getClassAndName(), false));
+            lockInfoList.add(new LockInfo("this", classBlock.getName(), this, false));
         }
         walkingMethod = false;
     }

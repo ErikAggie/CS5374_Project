@@ -12,6 +12,7 @@ public class LockFinderFactory {
         List<LockFinder> lockFinders = new LinkedList<>();
 
         lockFinders.add(new SynchronizedLockFinder(methodBlock));
+        lockFinders.add(new ReentrantLockFinder(methodBlock));
 
         return lockFinders;
     }

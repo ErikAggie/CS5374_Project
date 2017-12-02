@@ -43,7 +43,6 @@ public class CodeBlockParser {
 
     // Attempts to match a method. Because this could well match while and synchronized blocks, it needs to happen last
     private static final Pattern METHOD_PATTERN = Pattern.compile("(public|private|protected)?\\s*(static)?\\s*\\w*\\s+(\\w+)\\s*\\([\\w\\[\\]<>\\s,]*\\)");
-    //private static final Pattern METHOD_PATTERN = Pattern.compile("(public|private|protected)?\\s*(static)?[\\w\\s]*(\\w*)([\\w\\[\\]<>\\s,]*)");
 
     public static List<CodeBlock> parsePath(File directory) throws  FileNotFoundException, BlockParsingException {
 

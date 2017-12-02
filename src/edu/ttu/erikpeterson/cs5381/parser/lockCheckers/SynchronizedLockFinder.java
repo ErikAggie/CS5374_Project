@@ -52,7 +52,7 @@ public class SynchronizedLockFinder extends LockFinder {
                 return;
             }
 
-            LockInfo lockInfo = new LockInfo(variable, type, methodBlock.getClassAndName(), true);
+            LockInfo lockInfo = new LockInfo(variable, type, methodBlock, true);
 
             // When we find a '}' that gets us back to this level we'll mark this unlocked
             mapOfFoundSynchronizedBlocks.put(currentOpenParenLevel, lockInfo);
@@ -71,7 +71,7 @@ public class SynchronizedLockFinder extends LockFinder {
             if ( mapOfFoundSynchronizedBlocks.containsKey(currentOpenParenLevel))
             {
                 LockInfo lockJustUnlocked = mapOfFoundSynchronizedBlocks.remove(currentOpenParenLevel);
-                lockInfoList.add(new LockInfo(lockJustUnlocked.getName(), lockJustUnlocked.getType(), methodBlock.getClassAndName(), false));
+                lockInfoList.add(new LockInfo(lockJustUnlocked.getName(), lockJustUnlocked.getType(), methodBlock, false));
             }
         }
 
