@@ -116,6 +116,6 @@ class CodeBlockParserTest {
             fail("Unable to parse directory " + testDirectory.getAbsolutePath() + ": " + e.getMessage());
         }
 
-        assertEquals(codeBlocks.size(), 4);
+        assertEquals(codeBlocks.size(), 5);
     }
 }

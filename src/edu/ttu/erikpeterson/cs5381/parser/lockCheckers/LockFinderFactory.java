@@ -13,6 +13,7 @@ public class LockFinderFactory {
 
         lockFinders.add(new SynchronizedLockFinder(methodBlock));
         lockFinders.add(new ReentrantLockFinder(methodBlock));
+        lockFinders.add(new ReadWriteLockFinder(methodBlock));
 
         return lockFinders;
     }
