@@ -116,7 +116,27 @@ class CodeWalkerTest {
         {
             System.out.println(deadlockInfo);
         }
-
     }
 
+    @Test
+    void parseReadWriteLockExample() throws FileNotFoundException, BlockParsingException {
+        List<CodeBlock> codeBlocks = CodeBlockParser.parse(new File(Util.TEST_CLASS_PATH + "/ReadWriteLockExample.java"));
+        ClassBlock classBlock = (ClassBlock) codeBlocks.get(0);
+        Map<String, String> variables = classBlock.getClassVariables();
+        assertEquals("ReadWriteLock", variables.get("lock1"));
+        assertEquals("ReentrantReadWriteLock", variables.get("lock2"));
+
+        CodeWalker walker = new CodeWalker(codeBlocks);
+        assertEquals(walker.getThreadStarts().size(), 4);
+
+        walker.walkAllThreadStarts();
+
+        // Now we get to find the deadlock. There should only be one here (since the second thread group only involves readLocks()
+        List<String> deadlocks = walker.findDeadlocks();
+        assertEquals(1, deadlocks.size());
+        for ( String deadlockInfo : deadlocks)
+        {
+            System.out.println(deadlockInfo);
+        }
+    }
 }

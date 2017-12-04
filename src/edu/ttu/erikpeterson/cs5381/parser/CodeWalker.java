@@ -4,6 +4,8 @@ import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlock;
 import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlockType;
 import edu.ttu.erikpeterson.cs5381.parser.block.LockInfo;
 import edu.ttu.erikpeterson.cs5381.parser.block.MethodBlock;
+import edu.ttu.erikpeterson.cs5381.parser.lockCheckers.LockFinder;
+import edu.ttu.erikpeterson.cs5381.parser.lockCheckers.LockFinderFactory;
 
 import java.util.*;
 
@@ -11,6 +13,8 @@ public class CodeWalker {
     private final List<CodeBlock> codeBlockList;
     private final List<MethodBlock> threadStarts = new ArrayList<>();
     private Map<MethodBlock, List<LockInfo>> allLockInfo = new HashMap<>();
+
+    private List<LockFinder> lockFinders = LockFinderFactory.buildAllLockFinders(null);
 
     public CodeWalker(List<CodeBlock> codeBlockList)
     {
@@ -149,10 +153,26 @@ public class CodeWalker {
                 int currentPosition = positions.get(i);
                 if ( positions.get(i) < lastPosition)
                 {
-                    // Here's a potential deadlock!
-                    deadlockInfo.add("Potential deadlock between variables " +
-                                     currentCombinations.get(lastChangeIndex) + " and " +
-                                     currentCombinations.get(i));
+                    // Give the lock finders a chance to deny this is a deadlock (for example, ReadWriteLocks
+                    // are not deadlocks if they only involve readLocks)
+                    boolean isDeadlock = true;
+                    for ( LockFinder finder : lockFinders)
+                    {
+                        if ( !finder.verifyDeadlock(currentCombinations.get(lastChangeIndex), currentCombinations.get(i), existingCombination, currentCombinations))
+                        {
+                            // This isn't a deadlock
+                            isDeadlock = false;
+                            break;
+                        }
+                    }
+
+                    if ( isDeadlock)
+                    {
+                        // Found a potential deadlock!
+                        deadlockInfo.add("Potential deadlock between variables " +
+                                         currentCombinations.get(lastChangeIndex) + " and " +
+                                         currentCombinations.get(i));
+                    }
                     lastChangeIndex = i;
                 }
                 else if ( positions.get(i) > lastPosition)

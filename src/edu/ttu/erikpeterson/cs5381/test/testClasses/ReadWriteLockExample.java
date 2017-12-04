@@ -7,6 +7,8 @@ public class ReadWriteLockExample {
 
     private ReadWriteLock lock1 = new ReentrantReadWriteLock();
     private ReentrantReadWriteLock lock2 = new ReentrantReadWriteLock();
+    private ReadWriteLock lock3 = new ReentrantReadWriteLock();
+    private ReentrantReadWriteLock lock4 = new ReentrantReadWriteLock();
 
     private Thread thread1 = new Thread() {
         public void run() {
@@ -28,5 +30,28 @@ public class ReadWriteLockExample {
         }
     };
 
+    //-----------------------------------------------
+    // These two should not deadlock (all read locks)
+    //-----------------------------------------------
 
+    private Thread thread3 = new Thread() {
+        public void run() {
+            lock3.readLock().lock();
+            lock4.readLock().lock();
+            System.out.println("3 then 4 (read only)");
+            lock4.readLock().unlock();
+            lock3.readLock().unlock();
+        }
+    };
+
+
+    private Thread thread4 = new Thread() {
+        public void run() {
+            lock4.readLock().lock();
+            lock3.readLock().lock();
+            System.out.println("4 then 3 (read only)");
+            lock3.readLock().unlock();
+            lock4.readLock().unlock();
+        }
+    };
 }
