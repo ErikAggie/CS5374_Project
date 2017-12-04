@@ -1,17 +1,24 @@
 package edu.ttu.erikpeterson.cs5381.test;
 
-import edu.ttu.erikpeterson.cs5381.parser.CodeBlock;
+import edu.ttu.erikpeterson.cs5381.parser.BlockParsingException;
+import edu.ttu.erikpeterson.cs5381.parser.block.ClassBlock;
+import edu.ttu.erikpeterson.cs5381.parser.block.CodeBlock;
 import edu.ttu.erikpeterson.cs5381.parser.CodeBlockParser;
 import edu.ttu.erikpeterson.cs5381.parser.CodeWalker;
+import edu.ttu.erikpeterson.cs5381.parser.block.MethodBlock;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.List;
+import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
-public class CodeWalkerTest {
+/**
+ * Test the CodeWalker class (i.e. walk the code to find potential deadlocks)
+ */
+class CodeWalkerTest {
 
     @Test
     void walkBasicClass()
@@ -34,19 +41,102 @@ public class CodeWalkerTest {
     @Test
     void walkMainClass()
     {
-        File mainClass = new File(Util.TEST_CLASS_PATH + "/MainClass.java");
+        File mainClassFile = new File(Util.TEST_CLASS_PATH + "/MainClass.java");
         List<CodeBlock> codeBlocks = null;
         try
         {
-            codeBlocks = CodeBlockParser.parse(mainClass);
+            codeBlocks = CodeBlockParser.parse(mainClassFile);
         }
         catch ( Exception e)
         {
-            fail("Unable to parse file " + mainClass.getAbsolutePath() + ": " + e.getMessage());
+            fail("Unable to parse file " + mainClassFile.getAbsolutePath() + ": " + e.getMessage());
         }
 
+        assertEquals(1, codeBlocks.size());
+        assertTrue(codeBlocks.get(0) instanceof ClassBlock);
+        ClassBlock mainClass = ((ClassBlock)codeBlocks.get(0));
+        MethodBlock mainMethod = mainClass.getMethodBlock("main");
+        assertNotNull(mainMethod);
+
+        // main() has some interior methods (the thread start blocks), so make sure they're getting cut out
+        assertNotEquals(mainMethod.getThisMethodsCode().length(), mainMethod.getContents().length());
+
+        assertTrue(mainMethod.getThisMethodsCode().indexOf("for (int i=0; i<NUM_THREADS; i++)") > 0);
+
+        Map<String, String> mainVariables = mainMethod.getVariables();
+        // This contains the "randomValue" from one of the Futures, but that doesn't cause a problem elsewhere
+        assertEquals(8, mainVariables.keySet().size());
+
         CodeWalker walker = new CodeWalker(codeBlocks);
-        walker.walkAllThreadStarts();
         assertEquals(walker.getThreadStarts().size(), 3);
+        walker.walkAllThreadStarts();
+    }
+
+
+    @Test
+    void parseSynchronizedDeadlock() throws FileNotFoundException, BlockParsingException {
+        List<CodeBlock> codeBlocks = CodeBlockParser.parse(new File(Util.TEST_CLASS_PATH + "/SynchronizedDeadlock.java"));
+        ClassBlock classBlock = (ClassBlock) codeBlocks.get(0);
+        Map<String, String> variables = classBlock.getClassVariables();
+        assertEquals(variables.get("string1"), "String");
+        assertEquals(variables.get("string2"), "String");
+
+        CodeWalker walker = new CodeWalker(codeBlocks);
+        assertEquals(walker.getThreadStarts().size(), 5);
+
+        walker.walkAllThreadStarts();
+
+        // Now we get to find the deadlock :)
+        List<String> deadlocks = walker.findDeadlocks();
+        assertEquals(2, deadlocks.size());
+        for ( String deadlockInfo : deadlocks)
+        {
+            System.out.println(deadlockInfo);
+        }
+
+    }
+
+    @Test
+    void parseReentrantLockExample() throws FileNotFoundException, BlockParsingException {
+        List<CodeBlock> codeBlocks = CodeBlockParser.parse(new File(Util.TEST_CLASS_PATH + "/ReentrantLockExample.java"));
+        ClassBlock classBlock = (ClassBlock) codeBlocks.get(0);
+        Map<String, String> variables = classBlock.getClassVariables();
+        assertEquals("ReentrantLock", variables.get("lock1"));
+        assertEquals("ReentrantLock", variables.get("lock2"));
+
+        CodeWalker walker = new CodeWalker(codeBlocks);
+        assertEquals(walker.getThreadStarts().size(), 2);
+
+        walker.walkAllThreadStarts();
+
+        // Now we get to find the deadlock :)
+        List<String> deadlocks = walker.findDeadlocks();
+        assertEquals(1, deadlocks.size());
+        for ( String deadlockInfo : deadlocks)
+        {
+            System.out.println(deadlockInfo);
+        }
+    }
+
+    @Test
+    void parseReadWriteLockExample() throws FileNotFoundException, BlockParsingException {
+        List<CodeBlock> codeBlocks = CodeBlockParser.parse(new File(Util.TEST_CLASS_PATH + "/ReadWriteLockExample.java"));
+        ClassBlock classBlock = (ClassBlock) codeBlocks.get(0);
+        Map<String, String> variables = classBlock.getClassVariables();
+        assertEquals("ReadWriteLock", variables.get("lock1"));
+        assertEquals("ReentrantReadWriteLock", variables.get("lock2"));
+
+        CodeWalker walker = new CodeWalker(codeBlocks);
+        assertEquals(walker.getThreadStarts().size(), 4);
+
+        walker.walkAllThreadStarts();
+
+        // Now we get to find the deadlock. There should only be one here (since the second thread group only involves readLocks()
+        List<String> deadlocks = walker.findDeadlocks();
+        assertEquals(1, deadlocks.size());
+        for ( String deadlockInfo : deadlocks)
+        {
+            System.out.println(deadlockInfo);
+        }
     }
 }

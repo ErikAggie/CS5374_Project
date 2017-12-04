@@ -1,4 +1,4 @@
-package edu.ttu.erikpeterson.cs5381.parser;
+package edu.ttu.erikpeterson.cs5381.parser.block;
 
 /**
  * Represents the types of code blocks we care about
