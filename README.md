@@ -4,7 +4,7 @@ This project is being developed in IntelliJ Community 2017.2. To run this projec
 3. Create a Junit test configuration, testing all Junits found in package edu.ttu.erikpeterson.cs5381.test.
 4. Run the Junits
 
-This is my semester project for CS5381 (Verification and Validation) at Texas Tech University. It scans Java source files to uncover potential deadlocks.
+This is my semester project for CS 5374 (Verification and Validation) at Texas Tech University. It scans Java source files to uncover potential deadlocks.
 
 For known limitations of this tool, please see https://github.com/ErikAggie/CS5374_Project/wiki/Known-limitations
 
